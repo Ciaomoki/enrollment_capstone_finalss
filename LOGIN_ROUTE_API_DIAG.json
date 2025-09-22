@@ -1,0 +1,14 @@
+{
+  "studcheck_patched": false,
+  "studdashb_guard_added": false,
+  "auth_routes": [
+    "routes/authRoute.js"
+  ],
+  "auth_controller": "controllers/authController.js",
+  "fallback_applied": false,
+  "update_password_added": {
+    "studentModel": "exists",
+    "evaluatorModel": "exists",
+    "adminModel": "exists"
+  }
+}
