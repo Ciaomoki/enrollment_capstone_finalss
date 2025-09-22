@@ -1,0 +1,1289 @@
+/* =========================================================
+   Student Dashboard — SCOPED, RESPONSIVE  (v2025-09-05c)
+   Namespace: .student-dashboard
+   ========================================================= */
+
+/* ===== Reserve space so bottom nav never overlaps this page ===== */
+.student-dashboard main {
+  padding-bottom: calc(96px + env(safe-area-inset-bottom));
+}
+
+/* ===== Two-column shell (left content | right rail) ===== */
+.student-dashboard .dashboard-content {
+  display: grid;
+  grid-template-columns: 1fr 360px; /* left | right */
+  gap: clamp(16px, 2vw, 24px);
+  padding: clamp(16px, 2.2vw, 24px);
+  min-height: 0;
+}
+
+/* ===== RIGHT RAIL (sticky, scrollable) ===== */
+.student-dashboard .dash-right {
+  position: sticky;
+  top: 88px; /* below sticky header */
+  align-self: start;
+  background: #0b4d8f;
+  border-radius: 16px;
+  padding: 16px 20px 16px 16px; /* extra right so scrollbar never overlaps */
+  display: grid;
+  gap: 16px;
+  align-content: start;
+  min-width: 320px;
+  max-height: calc(
+    100vh - 88px - 80px - 24px
+  ); /* view - sticky - bottom nav - pad */
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-gutter: stable both-edges;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+/* ===== Greeting ===== */
+.student-dashboard .greeting-card {
+  background: #fff;
+  border-radius: 14px;
+  border: 1px solid #e5e7eb;
+  padding: clamp(14px, 1.6vw, 16px);
+}
+.student-dashboard .greet-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.student-dashboard .greet-head h2 {
+  color: #0c2d52;
+  font-size: clamp(18px, 1.7vw, 20px);
+  margin: 0;
+}
+.student-dashboard .greet-meta {
+  list-style: none;
+  display: flex;
+  gap: 18px;
+  margin: 0;
+  padding: 0;
+  color: #334155;
+  font-size: clamp(12px, 1.3vw, 14px);
+}
+.student-dashboard .greet-sub {
+  margin-top: 6px;
+  color: #475569;
+}
+
+/* =========================================================
+   MEDIA BANNER — CSS slider (no JS), with arrows & dots
+   ========================================================= */
+.student-dashboard .media-slideshow {
+  position: relative;
+  border-radius: 16px;
+  overflow: hidden;
+  background: #0b4d8f;
+  isolation: isolate;
+}
+
+/* radio controls (hidden) */
+.student-dashboard .media-slideshow input[type="radio"] {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* viewport */
+.student-dashboard .media-slideshow .slides {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+.student-dashboard .media-slideshow .track {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 100%;
+  transition: transform 350ms ease;
+}
+
+/* one slide */
+.student-dashboard .media-slideshow .slide {
+  position: relative;
+  min-height: clamp(160px, 26vw, 300px);
+  display: grid;
+  place-items: center;
+  color: #fff;
+}
+.student-dashboard .media-slideshow .slide img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.student-dashboard .media-slideshow .slide .caption {
+  position: absolute;
+  left: 16px;
+  bottom: 12px;
+  background: rgba(0, 0, 0, 0.45);
+  color: #fff;
+  padding: 8px 10px;
+  border-radius: 10px;
+  font-weight: 800;
+  font-size: 13px;
+}
+
+/* arrows */
+.student-dashboard .media-slideshow .nav {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  pointer-events: none;
+}
+.student-dashboard .media-slideshow .arrow {
+  pointer-events: auto;
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  background: rgba(0, 0, 0, 0.25);
+  display: grid;
+  place-items: center;
+  margin: 0 8px;
+  color: #fff;
+  cursor: pointer;
+  backdrop-filter: blur(2px);
+}
+.student-dashboard .media-slideshow .arrow:hover {
+  background: rgba(0, 0, 0, 0.35);
+}
+
+/* dots */
+.student-dashboard .media-slideshow .dots {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 8px;
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+.student-dashboard .media-slideshow .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+}
+
+/* checked-state → translate track */
+#sd-slide-1:checked ~ .slides .track {
+  transform: translateX(0%);
+}
+#sd-slide-2:checked ~ .slides .track {
+  transform: translateX(-100%);
+}
+#sd-slide-3:checked ~ .slides .track {
+  transform: translateX(-200%);
+}
+
+/* checked-state → dot highlight */
+#sd-slide-1:checked ~ .dots label[for="sd-slide-1"],
+#sd-slide-2:checked ~ .dots label[for="sd-slide-2"],
+#sd-slide-3:checked ~ .dots label[for="sd-slide-3"] {
+  background: #ffd700;
+}
+
+/* =========================================================
+   Steps bar (the ONLY element allowed to side-scroll)
+   ========================================================= */
+.student-dashboard .student-steps {
+  --chip-font: 20px;
+  --chip-px: 10px;
+  --chip-py: 6px;
+  --arrow-font: 14px;
+  --container-px: 16px;
+  --bar-thickness: 4px;
+  --bar-offset: 10px;
+  margin: 8px 0 0;
+  width: 100%;
+  padding: 14px var(--container-px) 28px;
+  border-radius: 16px;
+  position: relative;
+  background: #0047ab;
+}
+.student-dashboard .student-steps::before {
+  content: "";
+  position: absolute;
+  bottom: var(--bar-offset);
+  left: var(--container-px);
+  right: var(--container-px);
+  height: var(--bar-thickness);
+  background: #fff;
+  border-radius: 2px;
+}
+.student-dashboard .student-steps .steps-list {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  gap: 0;
+}
+.student-dashboard .student-steps .step-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #fff;
+  font-size: var(--chip-font);
+  cursor: pointer;
+  padding: var(--chip-py) var(--chip-px);
+  border-radius: 14px;
+  background: transparent;
+  white-space: nowrap;
+  font-weight: 800;
+}
+.student-dashboard .student-steps .step-item.active {
+  color: #ffd700;
+}
+.student-dashboard .student-steps .arrow-icon {
+  color: #fff;
+  font-size: var(--arrow-font);
+}
+
+/* Size tuning */
+@media (max-width: 1024px) {
+  .student-dashboard .student-steps {
+    --chip-font: 18px;
+    --chip-px: 9px;
+    --chip-py: 5px;
+    --arrow-font: 13px;
+    --container-px: 14px;
+  }
+}
+@media (max-width: 900px) {
+  .student-dashboard .student-steps {
+    --chip-font: 16px;
+    --chip-px: 8px;
+  }
+}
+@media (max-width: 768px) {
+  .student-dashboard .student-steps {
+    --chip-font: 15px;
+    --chip-px: 7px;
+    --arrow-font: 12px;
+  }
+}
+/* On phones: horizontal scroll instead of squish */
+@media (max-width: 600px) {
+  .student-dashboard .student-steps {
+    padding-bottom: 32px;
+  }
+  .student-dashboard .student-steps .steps-list {
+    justify-content: flex-start;
+    gap: 12px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x proximity;
+    padding: 0 var(--container-px);
+    white-space: nowrap;
+  }
+  .student-dashboard .student-steps .steps-list > li {
+    flex: 0 0 auto;
+    scroll-snap-align: start;
+  }
+}
+
+/* =========================================================
+   KPI GRID (YELLOW CARDS) — 3 / 2 / 2 (phones 2×3)
+   ========================================================= */
+.student-dashboard .kpi-grid {
+  margin-top: 16px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr)); /* desktop */
+  gap: 16px;
+  align-items: stretch;
+  grid-auto-rows: 1fr; /* equal heights */
+}
+@media (max-width: 1024px) {
+  .student-dashboard .kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 600px) {
+  .student-dashboard .kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (min-width: 992px) and (max-width: 1120px) {
+  .student-dashboard .kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+/* KPI card */
+.student-dashboard .kpi-card {
+  background: #ffd700;
+  border: 3px solid #0047ab;
+  border-radius: 18px;
+  padding: clamp(14px, 1.8vw, 18px);
+  min-height: 140px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: space-between;
+  min-width: 0;
+  transition: box-shadow 0.2s ease;
+}
+.student-dashboard .kpi-card:hover {
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+.student-dashboard .kpi-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.student-dashboard .kpi-head i {
+  font-size: clamp(18px, 2.1vw, 22px);
+  color: #0c2d52;
+  flex: 0 0 auto;
+}
+.student-dashboard .kpi-head h3 {
+  font-size: clamp(15px, 1.8vw, 18px);
+  color: #0c2d52;
+  font-weight: 900;
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.2;
+}
+.student-dashboard .kpi-value {
+  font-size: clamp(28px, 4.2vw, 36px);
+  color: #0c2d52;
+  font-weight: 900;
+  line-height: 1.05;
+}
+.student-dashboard .kpi-caption {
+  font-size: clamp(12px, 1.4vw, 13px);
+  color: #0c2d52;
+  margin-top: 2px;
+}
+
+/* =========================================================
+   COUNTDOWN — base (desktop: single row with separators)
+   ========================================================= */
+.student-dashboard .countdown {
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-start;
+  gap: 8px;
+  min-width: 0;
+  width: 100%;
+  flex-wrap: nowrap;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: #0c2d52;
+}
+.student-dashboard .cd-part {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 0 1 auto;
+  min-width: 0;
+  text-align: center;
+}
+.student-dashboard .cd-val {
+  font-size: 28px;
+  color: #0c2d52;
+  line-height: 1.05;
+}
+.student-dashboard .cd-lbl {
+  font-size: 11px;
+  text-transform: uppercase;
+  color: #0c2d52;
+}
+.student-dashboard .cd-sep {
+  flex: 0 0 auto;
+  line-height: 1;
+  font-weight: 900;
+  color: #0c2d52;
+}
+
+/* Tablet/Phone default: 2 rows */
+@media (max-width: 1024px) {
+  .student-dashboard .countdown {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    column-gap: 8px;
+    row-gap: 6px;
+    justify-items: center;
+    align-items: end;
+  }
+  .student-dashboard .cd-sep {
+    display: none !important;
+  }
+  .student-dashboard .cd-val {
+    font-size: 24px;
+  }
+  .student-dashboard .cd-lbl {
+    font-size: 10px;
+  }
+}
+
+/* Popular desktop laptop sizes: also split to avoid crowding */
+@media (width: 1440px) and (height: 900px),
+  (width: 1280px) and (height: 720px),
+  (width: 1366px) and (height: 768px),
+  (width: 1536px) and (height: 864px),
+  (width: 1920px) and (height: 1080px) {
+  .student-dashboard .kpi-head h3 {
+    font-size: clamp(14.5px, 1.6vw, 17px);
+  }
+  .student-dashboard .kpi-value {
+    font-size: clamp(26px, 3.8vw, 34px);
+  }
+  .student-dashboard .countdown {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px 12px;
+    justify-items: center;
+    align-items: end;
+  }
+  .student-dashboard .cd-sep {
+    display: none;
+  }
+  .student-dashboard .cd-val {
+    font-size: 26px;
+  }
+}
+
+/* ===== SPECIFIC iPad-ish overrides you asked for ===== */
+@media (width: 768px) and (height: 1024px) {
+  .student-dashboard .countdown {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+  }
+  .student-dashboard .cd-sep {
+    display: inline-block !important;
+  }
+  .student-dashboard .cd-val {
+    font-size: 23px !important;
+  }
+  .student-dashboard .cd-lbl {
+    font-size: 10px !important;
+  }
+}
+@media (width: 834px) and (height: 1194px) {
+  .student-dashboard .countdown {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+  }
+  .student-dashboard .cd-sep {
+    display: inline-block !important;
+  }
+  .student-dashboard .cd-val {
+    font-size: 24px !important;
+  }
+  .student-dashboard .cd-lbl {
+    font-size: 10px !important;
+  }
+}
+@media (width: 1032px) and (height: 1376px) {
+  .student-dashboard .countdown {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    column-gap: 10px !important;
+    row-gap: 6px !important;
+    justify-items: center !important;
+    align-items: end !important;
+  }
+  .student-dashboard .cd-sep {
+    display: none !important;
+  }
+  .student-dashboard .cd-val {
+    font-size: 24px !important;
+  }
+  .student-dashboard .cd-lbl {
+    font-size: 10.5px !important;
+  }
+}
+
+/* ===== Right-rail panels ===== */
+.student-dashboard .panel-card {
+  background: #fff;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+.student-dashboard .panel-head {
+  background: #f2c94c;
+  padding: 12px 16px;
+}
+.student-dashboard .panel-head h3 {
+  margin: 0;
+  font-size: clamp(14px, 1.6vw, 16px);
+  line-height: 1.1;
+  font-weight: 800;
+  color: #0b1a33;
+}
+.student-dashboard .panel-body {
+  padding: 14px 16px;
+}
+
+/* Evaluator block */
+.student-dashboard .eval-body {
+  display: grid;
+  gap: 14px;
+  padding: 14px 20px;
+}
+.student-dashboard .eval-row {
+  display: grid;
+  grid-template-columns: 56px 1fr auto;
+  gap: 12px;
+  align-items: center;
+}
+.student-dashboard .eval-avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #e6efff;
+  color: #0b4d8f;
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+.student-dashboard .eval-info {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.student-dashboard .eval-name {
+  font-weight: 800;
+  color: #0b1a33;
+  line-height: 1.1;
+  font-size: clamp(12.5px, 1.5vw, 13.5px);
+}
+.student-dashboard .eval-role {
+  font-size: clamp(11.5px, 1.3vw, 12.5px);
+  color: #475569;
+}
+.student-dashboard .eval-meta {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+.student-dashboard .eval-meta li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #334155;
+}
+.student-dashboard .status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #ecfdf5;
+  color: #065f46;
+  border: 1px solid #bbf7d0;
+  justify-self: end;
+}
+.student-dashboard .status-pill i {
+  font-size: 8px;
+}
+.student-dashboard .panel-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+.student-dashboard .btn {
+  appearance: none;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.student-dashboard .btn-outline {
+  background: #fff;
+  color: #0b4d8f;
+  border-color: #0b4d8f;
+}
+.student-dashboard .btn-outline:hover {
+  background: #eef6ff;
+}
+
+/* ===== Restored “step-by-step guide” look ===== */
+.student-dashboard .step-list {
+  counter-reset: step;
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.student-dashboard .step-list li {
+  display: grid;
+  grid-template-columns: 28px 1fr;
+  gap: 10px;
+  align-items: center;
+  padding: 8px 10px;
+  border: 1px solid #eef2f7;
+  border-radius: 10px;
+  background: #fff;
+}
+.student-dashboard .step-list li .step-num {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: #ffd700;
+  color: #0b1a33;
+  display: grid;
+  place-items: center;
+  font-weight: 900;
+  font-size: 13px;
+}
+.student-dashboard .step-list li strong {
+  color: #0b1a33;
+}
+
+/* Dashboard guide bullets retained */
+.student-dashboard .guide-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 10px;
+}
+.student-dashboard .guide-item {
+  display: grid;
+  grid-template-columns: 32px 1fr;
+  gap: 10px;
+  align-items: start;
+  padding: 8px;
+  border: 1px solid #eef2f7;
+  border-radius: 10px;
+}
+.student-dashboard .guide-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  display: grid;
+  place-items: center;
+  background: #fff3c4;
+  border: 1px solid #f2c94c;
+}
+.student-dashboard .guide-title {
+  font-weight: 800;
+  font-size: 13px;
+  color: #0b1a33;
+}
+.student-dashboard .guide-text p {
+  font-size: 12px;
+  line-height: 1.35;
+  color: #334155;
+  margin: 0;
+}
+
+/* Recent activity (unchanged) */
+.student-dashboard .activity-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 10px;
+}
+.student-dashboard .activity-row {
+  display: grid;
+  grid-template-columns: 80px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+  padding: 6px 0;
+  border-bottom: 1px dashed #e5e7eb;
+}
+.student-dashboard .activity-row:last-child {
+  border-bottom: 0;
+}
+.student-dashboard .activity-time {
+  font-size: clamp(11.5px, 1.2vw, 12px);
+  color: #475569;
+}
+.student-dashboard .activity-text strong {
+  font-size: clamp(12.5px, 1.5vw, 13.5px);
+  color: #0b1a33;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.student-dashboard .activity-text span {
+  font-size: clamp(11.5px, 1.3vw, 12.5px);
+  color: #6b7280;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ===== Responsiveness for shell ===== */
+@media (min-width: 1440px) {
+  .student-dashboard .dashboard-content {
+    grid-template-columns: 1fr 380px;
+  }
+}
+@media (min-width: 1280px) and (max-width: 1439px) {
+  .student-dashboard .dashboard-content {
+    grid-template-columns: 1fr 360px;
+  }
+}
+@media (max-width: 1024px) {
+  .student-dashboard .dashboard-content {
+    grid-template-columns: 1fr;
+  }
+  .student-dashboard .dash-right {
+    position: static;
+    max-height: none;
+    overflow: visible;
+    background: transparent;
+    padding: 0;
+    border-radius: 0;
+    scrollbar-gutter: auto;
+  }
+}
+
+/* ===== Page-wide x-scroll guardrails (only steps can scroll x) ===== */
+.student-dashboard .global-container {
+  overflow-x: clip;
+}
+.student-dashboard main,
+.student-dashboard .dashboard-content,
+.student-dashboard .dash-left,
+.student-dashboard .dash-right {
+  min-width: 0;
+}
+
+/* Small phones tightening */
+@media (max-width: 520px) {
+  .student-dashboard .dashboard-content {
+    padding: 12px;
+    gap: 12px;
+  }
+  .student-dashboard .kpi-card {
+    padding: 12px;
+  }
+  .student-dashboard .panel-card .panel-body {
+    padding: 12px;
+  }
+}
+
+/* ================== TWEAKS 2025-09-05d ================== */
+
+/* 1) Space below the media banner */
+.student-dashboard .media-slideshow {
+  margin-bottom: clamp(14px, 2vw, 20px);
+}
+
+/* 2) Step-by-step guide — refined (number in its own column, crisp title/desc) */
+.student-dashboard .panel-steps {
+  border-radius: 14px;
+  overflow: hidden;
+}
+.student-dashboard .panel-steps .panel-title {
+  margin: 0;
+  padding: 12px 16px;
+  background: #f2c94c;
+  color: #0b1a33;
+  font-weight: 900;
+  font-size: clamp(14px, 1.6vw, 16px);
+}
+.student-dashboard .steps-body {
+  padding: 14px 16px;
+  background: #0b4d8f0a;
+}
+.student-dashboard .step-item {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  align-items: start;
+  gap: 10px;
+  padding: 10px 12px;
+  background: #fff;
+  border: 1px solid #e6e9f0;
+  border-radius: 10px;
+}
+.student-dashboard .step-num {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: #ffd700;
+  color: #0b1a33;
+  display: grid;
+  place-items: center;
+  font-weight: 900;
+  font-size: 13px;
+  line-height: 1;
+  white-space: nowrap;
+}
+.student-dashboard .step-main {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.student-dashboard .step-title {
+  font-weight: 900;
+  color: #0b1a33;
+  font-size: 13.5px;
+  line-height: 1.25;
+}
+.student-dashboard .step-desc {
+  margin: 0;
+  color: #334155;
+  font-size: 12.5px;
+  line-height: 1.35;
+}
+
+@media (max-width: 1024px) {
+  .student-dashboard .step-item {
+    padding: 9px 10px;
+  }
+  .student-dashboard .step-title {
+    font-size: 13px;
+  }
+  .student-dashboard .step-desc {
+    font-size: 12px;
+  }
+}
+
+/* 3) Recent Activity — EXACT admin look, scoped here */
+.student-dashboard .panel.panel-activity {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+.student-dashboard .panel.panel-activity .panel-title {
+  margin: 0;
+  padding: 12px 16px;
+  background: #f2c94c;
+  border-top-left-radius: 14px;
+  border-top-right-radius: 14px;
+  font-weight: 900;
+  color: #0b1a33;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: clamp(14px, 1.6vw, 16px);
+}
+.student-dashboard .panel.panel-activity .panel-body {
+  padding: 14px 16px;
+}
+.student-dashboard .panel.panel-activity .activity-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 10px;
+}
+.student-dashboard .panel.panel-activity .activity-row {
+  display: grid;
+  grid-template-columns: 80px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+  padding: 6px 0;
+  border-bottom: 1px dashed #e5e7eb;
+}
+.student-dashboard .panel.panel-activity .activity-row:last-child {
+  border-bottom: 0;
+}
+.student-dashboard .panel.panel-activity .activity-time {
+  font-size: clamp(11.5px, 1.2vw, 12px);
+  color: #475569;
+}
+.student-dashboard .panel.panel-activity .activity-text {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.student-dashboard .panel.panel-activity .activity-text strong {
+  font-size: clamp(12.5px, 1.5vw, 13.5px);
+  color: #0b1a33;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.student-dashboard .panel.panel-activity .activity-text span {
+  font-size: clamp(11.5px, 1.3vw, 12.5px);
+  color: #6b7280;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* =========================
+   ✉️ Message Validator Modal (popup) — styles for JS-built UI
+   ========================= */
+body.modal-open {
+  overflow: hidden;
+}
+
+.student-dashboard .msgval-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 4000;
+  background: rgba(12, 45, 82, 0.55);
+  display: none;
+  padding: 16px;
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+.student-dashboard .msgval-overlay.is-open {
+  display: block;
+}
+
+.student-dashboard .msgval-dialog {
+  width: min(760px, 96vw);
+  max-height: calc(100svh - 80px);
+  overflow: auto;
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.25);
+  margin: auto; /* center on desktop */
+}
+
+@media (max-width: 767px) {
+  .student-dashboard .msgval-dialog {
+    margin: auto auto 0 auto; /* slide-up feel on phones */
+    border-radius: 16px 16px 0 0;
+  }
+}
+
+.student-dashboard .msgval-header {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  background: #f2c94c;
+  color: #0b1a33;
+  font-weight: 900;
+}
+.student-dashboard .msgval-title {
+  font-size: 16px;
+}
+.student-dashboard .msgval-header-actions {
+  display: inline-flex;
+  gap: 8px;
+}
+.student-dashboard .msgval-hlink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  color: #0b1a33;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-weight: 800;
+  text-decoration: none;
+}
+.student-dashboard .msgval-close {
+  border: none;
+  background: #fff;
+  color: #0b1a33;
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.student-dashboard .msgval-hr {
+  height: 1px;
+  background: #eef2f7;
+}
+
+.student-dashboard .msgval-form {
+  padding: 14px 16px;
+  display: grid;
+  gap: 14px;
+  background: #fff;
+}
+.student-dashboard .msgval-group {
+  display: grid;
+  grid-template-columns: 140px minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+}
+.student-dashboard .msgval-label {
+  font-weight: 800;
+  color: #0b1a33;
+  font-size: 13px;
+}
+.student-dashboard .msgval-select,
+.student-dashboard .msgval-textarea {
+  width: 100%;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font: inherit;
+  color: #0b1a33;
+  background: #fff;
+}
+.student-dashboard .msgval-textarea {
+  min-height: 140px;
+  resize: vertical;
+}
+
+@media (max-width: 560px) {
+  .student-dashboard .msgval-group {
+    grid-template-columns: 1fr;
+  }
+}
+
+.student-dashboard .msgval-error {
+  display: none;
+  color: #b91c1c;
+  background: #fee2e2;
+  border: 1px solid #fecaca;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-weight: 700;
+}
+.student-dashboard .msgval-error.is-visible {
+  display: block;
+}
+
+.student-dashboard .msgval-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 6px;
+}
+.student-dashboard .msgval-btn {
+  border: 1px solid #e5e7eb;
+  background: #f3f4f6;
+  color: #0b1a33;
+  border-radius: 999px;
+  padding: 10px 14px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.student-dashboard .msgval-btn--send {
+  background: #ffd700;
+  border-color: #e7c200;
+  color: #0b1a33;
+}
+
+/* ✉️ Message Validator Modal — mobile-safe sizing */
+body.modal-open {
+  overflow: hidden;
+}
+
+.student-dashboard .msgval-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 4000;
+  background: rgba(12, 45, 82, 0.55);
+  display: none;
+  padding: 12px; /* small gutter */
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+.student-dashboard .msgval-overlay.is-open {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* dialog is a flex column so content can scroll inside */
+.student-dashboard .msgval-dialog {
+  width: min(760px, 96vw);
+  max-height: calc(100svh - 24px); /* safe viewport height */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.25);
+}
+
+/* header stays natural height; body scrolls */
+.student-dashboard .msgval-header {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 10px;
+  align-items: center;
+  padding: 12px 16px;
+  background: #f2c94c;
+  color: #0b1a33;
+  font-weight: 900;
+}
+.student-dashboard .msgval-title {
+  font-size: 16px;
+}
+.student-dashboard .msgval-header-actions {
+  display: inline-flex;
+  gap: 8px;
+}
+.student-dashboard .msgval-hlink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  color: #0b1a33;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-weight: 800;
+  text-decoration: none;
+}
+.student-dashboard .msgval-close {
+  border: none;
+  background: #fff;
+  color: #0b1a33;
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.student-dashboard .msgval-hr {
+  height: 1px;
+  background: #eef2f7;
+}
+
+.student-dashboard .msgval-form {
+  padding: 14px 16px;
+  display: grid;
+  gap: 14px;
+  background: #fff;
+  overflow: auto; /* <-- internal scroll if needed */
+}
+.student-dashboard .msgval-group {
+  display: grid;
+  grid-template-columns: 140px minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+}
+.student-dashboard .msgval-label {
+  font-weight: 800;
+  color: #0b1a33;
+  font-size: 13px;
+}
+.student-dashboard .msgval-select,
+.student-dashboard .msgval-textarea {
+  width: 100%;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font: inherit;
+  color: #0b1a33;
+  background: #fff;
+}
+.student-dashboard .msgval-textarea {
+  min-height: 140px;
+  resize: vertical;
+}
+.student-dashboard .msgval-error {
+  display: none;
+  color: #b91c1c;
+  background: #fee2e2;
+  border: 1px solid #fecaca;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-weight: 700;
+}
+.student-dashboard .msgval-error.is-visible {
+  display: block;
+}
+.student-dashboard .msgval-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 6px;
+}
+.student-dashboard .msgval-btn {
+  border: 1px solid #e5e7eb;
+  background: #f3f4f6;
+  color: #0b1a33;
+  border-radius: 999px;
+  padding: 10px 14px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.student-dashboard .msgval-btn--send {
+  background: #ffd700;
+  border-color: #e7c200;
+  color: #0b1a33;
+}
+
+/* Phone behavior: bottom-sheet layout, full width, never clipped */
+@media (max-width: 767px) {
+  .student-dashboard .msgval-overlay.is-open {
+    align-items: flex-end;
+  } /* slide-up */
+  .student-dashboard .msgval-dialog {
+    width: 100%;
+    max-height: calc(100svh - 12px);
+    border-radius: 16px 16px 0 0;
+  }
+  .student-dashboard .msgval-group {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ================== OVERRIDES — 2025-09-05e ================== */
+
+/* A) LEFT “Steps bar” — force NO white boxes (doesn't touch right panel) */
+.student-dashboard .student-steps .step-item {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  padding: var(--chip-py) var(--chip-px); /* keep chip spacing */
+}
+.student-dashboard .student-steps .step-item:hover {
+  background: rgba(255, 255, 255, 0.08); /* subtle hover only */
+}
+
+/* B) Tip footer — centered, responsive size & spacing */
+.student-dashboard .dashboard-tip {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+
+  margin: clamp(12px, 2.2vw, 18px) 0;
+  padding: clamp(8px, 1.8vw, 12px) clamp(10px, 2.4vw, 16px);
+
+  font-size: clamp(12px, 1.4vw, 14px);
+  line-height: 1.4;
+  color: #0b1a33;
+
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+}
+.student-dashboard .dashboard-tip em {
+  font-style: italic; /* keep the “tip” feel */
+  font-weight: 600;
+}
+
+/* Extra tightening on phones */
+@media (max-width: 520px) {
+  .student-dashboard .dashboard-tip {
+    padding: 10px 12px;
+    border-radius: 10px;
+  }
+}

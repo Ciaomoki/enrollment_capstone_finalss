@@ -1,0 +1,28 @@
+CREATE DATABASE IF NOT EXISTS `enrollment_db` CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+USE `enrollment_db`;
+
+CREATE TABLE IF NOT EXISTS student (
+    student_id INT NOT NULL PRIMARY KEY,
+    full_name VARCHAR(100) NOT NULL,
+    email VARCHAR(100) UNIQUE NOT NULL,
+    course VARCHAR(100) NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS evaluator (
+    employee_id INT NOT NULL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    email VARCHAR(100) UNIQUE NOT NULL,
+    department VARCHAR(100) NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS admin (
+  admin_id INT NOT NULL PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  email VARCHAR(255) NOT NULL UNIQUE,
+  password VARCHAR(255) NOT NULL,  
+  resetLink VARCHAR(255) DEFAULT ''
+);

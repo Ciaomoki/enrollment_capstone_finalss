@@ -1,0 +1,587 @@
+/* =========================================================
+   Evaluator Dashboard — SCOPED, RESPONSIVE  (v2025-09-03c)
+   Namespace: .evaluator-dashboard
+   Updates:
+   - KPI (yellow) grid: 3 cols desktop, **2 cols on tablet & mobile**
+   - Blue quick-action cards: **one row (3 cols) on desktop & large tablets**, **1 col on normal tablets & mobile**
+   - Sticky right rail sizing preserved
+   ========================================================= */
+
+:root {
+  --kpi-icon-size: 22px;
+}
+
+/* Reserve space so bottom nav never overlaps */
+.evaluator-dashboard main {
+  padding-bottom: 96px;
+}
+
+/* Two-column shell (left content | right rail) */
+.evaluator-dashboard .dashboard-content {
+  display: grid;
+  grid-template-columns: 1fr 360px; /* left | right */
+  gap: clamp(16px, 2vw, 24px);
+  padding: clamp(16px, 2.2vw, 24px);
+  min-height: 0;
+}
+
+/* RIGHT RAIL (sticky, scrollable) */
+.evaluator-dashboard .dash-right {
+  position: sticky;
+  top: 88px; /* below sticky header */
+  align-self: start;
+  background: #0b4d8f;
+  border-radius: 16px;
+  padding: 16px 20px 16px 16px; /* +4px right so scrollbar never overlaps */
+  display: grid;
+  gap: 16px;
+  align-content: start;
+  min-width: 320px;
+  max-height: calc(
+    100vh - 88px - 96px - 24px
+  ); /* view - sticky - bottom nav - pad */
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-gutter: stable both-edges;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+/* Greeting block */
+.evaluator-dashboard .greeting-card {
+  background: #fff;
+  border-radius: 14px;
+  border: 1px solid #e5e7eb;
+  padding: clamp(14px, 1.6vw, 16px);
+}
+.evaluator-dashboard .greet-head h2 {
+  color: #0c2d52;
+  font-size: clamp(18px, 1.7vw, 20px);
+  margin-bottom: 4px;
+}
+.evaluator-dashboard .greet-head p {
+  color: #6b7280;
+  font-size: clamp(12.5px, 1.3vw, 14px);
+}
+
+/* ================= BLUE QUICK-ACTION CARDS =================
+   Desktop & large tablets => one row (3 columns)
+   Normal tablets & mobile => one column
+============================================================= */
+.evaluator-dashboard .quick-actions,
+.evaluator-dashboard .quick-actions.three {
+  margin-top: 14px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr)); /* one row */
+  gap: 12px;
+}
+@media (max-width: 1024px) {
+  .evaluator-dashboard .quick-actions,
+  .evaluator-dashboard .quick-actions.three {
+    grid-template-columns: 1fr; /* stack */
+  }
+}
+.evaluator-dashboard .qa-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: clamp(12px, 1.6vw, 14px) 10px;
+  border-radius: 12px;
+  background: #0047ab;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  font-weight: 700;
+  text-align: center;
+  transition: box-shadow 0.2s ease, filter 0.15s ease;
+  min-width: 0;
+}
+.evaluator-dashboard .qa-btn i {
+  font-size: clamp(16px, 1.6vw, 18px);
+  line-height: 1;
+}
+.evaluator-dashboard .qa-btn:hover {
+  filter: brightness(1.06);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.18);
+}
+
+/* ================= YELLOW KPI GRID =================
+   Desktop => 3 columns
+   Tablet & Mobile => 2 columns
+==================================================== */
+.evaluator-dashboard .kpi-grid {
+  margin-top: 16px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  align-items: stretch;
+  grid-auto-rows: 1fr; /* equal heights */
+}
+@media (max-width: 1024px) {
+  .evaluator-dashboard .kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)); /* tablet */
+  }
+}
+@media (max-width: 520px) {
+  .evaluator-dashboard .kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)); /* mobile stays 2-up */
+    gap: 12px;
+  }
+}
+
+/* KPI card */
+.evaluator-dashboard .kpi-card {
+  background: #ffd700;
+  border: 3px solid #0047ab;
+  border-radius: 18px;
+  padding: clamp(14px, 1.8vw, 18px);
+  min-height: 140px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: space-between;
+  min-width: 0;
+  transition: box-shadow 0.2s ease;
+}
+.evaluator-dashboard .kpi-card:hover {
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+.evaluator-dashboard .kpi-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.evaluator-dashboard .kpi-head i {
+  font-size: clamp(18px, 2.1vw, 22px);
+  color: #0c2d52;
+  flex: 0 0 auto;
+}
+.evaluator-dashboard .kpi-head h3 {
+  font-size: clamp(15px, 1.8vw, 18px);
+  color: #0c2d52;
+  font-weight: 900;
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.2;
+}
+.evaluator-dashboard .kpi-value {
+  font-size: clamp(28px, 4.2vw, 36px);
+  color: #0c2d52;
+  font-weight: 900;
+  line-height: 1.05;
+}
+
+/* Countdown */
+.evaluator-dashboard .countdown {
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-start;
+  gap: clamp(4px, 1.2vw, 10px);
+  min-width: 0;
+  width: 100%;
+  flex-wrap: nowrap; /* force one line (desktop default) */
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.evaluator-dashboard .cd-part {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 0 1 auto;
+  min-width: 0;
+  text-align: center;
+}
+.evaluator-dashboard .cd-sep {
+  flex: 0 0 auto;
+  line-height: 1;
+  padding: 0 2px;
+}
+.evaluator-dashboard .cd-val {
+  font-size: clamp(17px, 2.4vw, 26px);
+  color: #0c2d52;
+  line-height: 1.05;
+}
+.evaluator-dashboard .cd-lbl {
+  font-size: clamp(9.5px, 1.1vw, 11px);
+  text-transform: uppercase;
+  color: #0c2d52;
+}
+
+/* Tablet/Phone: exactly 2 rows => (Days Hours) / (Mins Secs); hide ":" */
+@media (max-width: 1024px) {
+  .evaluator-dashboard .countdown {
+    display: grid; /* switch to 2×2 grid */
+    grid-template-columns: repeat(2, 1fr);
+    grid-auto-rows: auto;
+    column-gap: 8px;
+    row-gap: 6px;
+    justify-items: center;
+    align-items: end;
+  }
+  .evaluator-dashboard .cd-sep {
+    display: none !important;
+  }
+  .evaluator-dashboard .cd-val {
+    font-size: clamp(15px, 3.2vw, 22px);
+  }
+  .evaluator-dashboard .cd-lbl {
+    font-size: clamp(9px, 1.8vw, 10.5px);
+  }
+}
+
+/* Popular laptop sizes: enforce 2-row for comfort */
+@media (width: 1536px) and (height: 864px),
+  (width: 1440px) and (height: 900px),
+  (width: 1366px) and (height: 768px),
+  (width: 1280px) and (height: 720px) {
+  .evaluator-dashboard .countdown {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr);
+    column-gap: 10px;
+    row-gap: 6px;
+    justify-items: center;
+    align-items: end;
+    width: 100%;
+    min-width: 0;
+    font-variant-numeric: tabular-nums;
+  }
+  .evaluator-dashboard .cd-sep {
+    display: none !important;
+  }
+  .evaluator-dashboard .cd-val {
+    font-size: clamp(16px, 2.2vw, 24px);
+  }
+  .evaluator-dashboard .cd-lbl {
+    font-size: clamp(9.5px, 1.1vw, 11px);
+  }
+}
+
+/* Right-rail panels */
+.evaluator-dashboard .panel {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 14px 16px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  transition: box-shadow 0.2s ease;
+}
+.evaluator-dashboard .panel:hover {
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+}
+.evaluator-dashboard .panel .panel-title {
+  margin: -14px -16px 12px -16px;
+  padding: 12px 16px;
+  background: #f2c94c;
+  border-top-left-radius: 14px;
+  border-top-right-radius: 14px;
+  font-weight: 900;
+  color: #0b1a33;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: clamp(14px, 1.6vw, 16px);
+}
+
+/* Progress bar */
+.evaluator-dashboard .panel-progress .progress-percent {
+  color: #0c2d52;
+  font-weight: 900;
+}
+.evaluator-dashboard .progressbar {
+  width: 100%;
+  height: 8px;
+  border-radius: 9999px;
+  background: #e5e7eb;
+  overflow: hidden;
+}
+.evaluator-dashboard .progressbar-fill {
+  height: 100%;
+  background: #ffd700;
+}
+
+/* Review Queue merged panel */
+.evaluator-dashboard .review-queue-panel .rq-current {
+  display: grid;
+  grid-template-columns: 56px 1fr;
+  gap: 12px;
+  align-items: center;
+  padding: 12px;
+  min-width: 0;
+  background: #eef6ff;
+  border: 1px solid #dbeafe;
+  border-radius: 12px;
+  margin: 2px 0 10px;
+}
+.evaluator-dashboard .review-queue-panel .rq-avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 9999px;
+  background: #e6efff;
+  color: #0b4d8f;
+  border: 2px solid #dbeafe;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+.evaluator-dashboard .review-queue-panel .rq-avatar i {
+  font-size: 26px;
+}
+.evaluator-dashboard .review-queue-panel .rq-info {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.evaluator-dashboard .review-queue-panel .rq-name {
+  font-weight: 800;
+  color: #0b1a33;
+  font-size: 16px;
+  line-height: 1.1;
+}
+.evaluator-dashboard .review-queue-panel .rq-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  font-size: 12px;
+  color: #475569;
+}
+.evaluator-dashboard .review-queue-panel .rq-sep {
+  height: 2px;
+  margin: 12px -16px 8px; /* stretch to panel edges */
+  background: #d1d5db;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.04);
+}
+.evaluator-dashboard .review-queue-panel .rq-list {
+  display: block;
+}
+.evaluator-dashboard .review-queue-panel .rq-item {
+  display: grid;
+  grid-template-columns: 36px 1fr;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 0;
+  text-decoration: none;
+  color: inherit;
+  transition: background-color 0.15s ease;
+  overflow-wrap: anywhere;
+}
+.evaluator-dashboard .review-queue-panel .rq-item + .rq-item {
+  border-top: 1px dashed #e5e7eb;
+}
+.evaluator-dashboard .review-queue-panel .rq-item:hover {
+  background: #fffdf1;
+}
+.evaluator-dashboard .review-queue-panel .rq-item:focus-visible {
+  outline: 2px solid #0047ab33;
+  outline-offset: -2px;
+  background: #fffdf1;
+}
+.evaluator-dashboard .review-queue-panel .rq-iavatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 9999px;
+  background: #e6efff;
+  color: #0b4d8f;
+  border: 1px solid #dbe6ff;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+.evaluator-dashboard .review-queue-panel .rq-iavatar i {
+  font-size: 18px;
+}
+.evaluator-dashboard .review-queue-panel .rq-text {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.evaluator-dashboard .review-queue-panel .rq-sname {
+  font-weight: 800;
+  color: #0b1a33;
+  line-height: 1.2;
+}
+.evaluator-dashboard .review-queue-panel .rq-smeta {
+  font-size: 12px;
+  color: #6b7280;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+/* Recent Activity */
+.evaluator-dashboard .activity-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 10px;
+}
+.evaluator-dashboard .activity-row {
+  display: grid;
+  grid-template-columns: 80px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+  padding: 6px 0;
+  border-bottom: 1px dashed #e5e7eb;
+}
+.evaluator-dashboard .activity-row:last-child {
+  border-bottom: 0;
+}
+.evaluator-dashboard .activity-time {
+  font-size: clamp(11.5px, 1.2vw, 12px);
+  color: #475569;
+}
+.evaluator-dashboard .activity-text {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.evaluator-dashboard .activity-text strong {
+  font-size: clamp(12.5px, 1.5vw, 13.5px);
+  color: #0b1a33;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.evaluator-dashboard .activity-text span {
+  font-size: clamp(11.5px, 1.3vw, 12.5px);
+  color: #6b7280;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Responsive shell tuning */
+@media (min-width: 1440px) {
+  .evaluator-dashboard .dashboard-content {
+    grid-template-columns: 1fr 380px;
+  }
+}
+@media (min-width: 1280px) and (max-width: 1439px) {
+  .evaluator-dashboard .dashboard-content {
+    grid-template-columns: 1fr 360px;
+  }
+}
+@media (max-width: 1024px) {
+  .evaluator-dashboard .dashboard-content {
+    grid-template-columns: 1fr;
+  }
+  .evaluator-dashboard .dash-right {
+    position: static;
+    max-height: none;
+    overflow: visible;
+    background: transparent;
+    padding: 0;
+    border-radius: 0;
+    scrollbar-gutter: auto;
+  }
+  .evaluator-dashboard .panel {
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+  }
+}
+
+/* Very small phones: extra tightening */
+@media (max-width: 420px) {
+  .evaluator-dashboard .dashboard-content {
+    padding: 12px;
+    gap: 12px;
+  }
+  .evaluator-dashboard .kpi-card {
+    padding: 12px;
+  }
+  .evaluator-dashboard .panel {
+    padding: 12px;
+  }
+  .evaluator-dashboard .panel .panel-title {
+    padding: 10px 12px;
+  }
+}
+
+/* 1920×1080 laptop fix — keep bottom nav aligned with sidebar on this page */
+@media (width: 1920px) and (height: 1080px) {
+  :root {
+    --sidebar-w-1080: 280px;
+  }
+  .evaluator-dashboard #bottomNav {
+    left: var(--sidebar-w-1080) !important;
+    width: calc(100% - var(--sidebar-w-1080)) !important;
+    bottom: 0 !important;
+    z-index: 1500 !important;
+    position: fixed;
+  }
+  .evaluator-dashboard #bottomNav.collapsed {
+    left: 0 !important;
+    width: 100% !important;
+  }
+}
+
+/* =========================================================
+   Evaluator Dashboard — QUICK OVERRIDES (easy append)
+   Paste AFTER your existing evaldashb.css.
+   Purpose:
+   • KPI (yellow) grid → 3 cols desktop, **2 cols on tablet/mobile**
+   • Quick-actions (blue) → **3 cols (one row) on desktop & LARGE tablets**,
+     **1 col on normal tablets & mobile**
+   • Force 2-col KPI on Large iPad Pro M4 (1032×1376)
+   ========================================================= */
+
+/* ---- Base desktop / large tablet defaults ---- */
+.evaluator-dashboard .quick-actions,
+.evaluator-dashboard .quick-actions.three {
+  grid-template-columns: repeat(
+    3,
+    minmax(0, 1fr)
+  ) !important; /* one row of blue cards */
+}
+.evaluator-dashboard .kpi-grid {
+  grid-template-columns: repeat(
+    3,
+    minmax(0, 1fr)
+  ) !important; /* 3-up yellow cards */
+}
+
+/* ---- Normal tablets & mobile ---- */
+@media (max-width: 1024px) {
+  .evaluator-dashboard .quick-actions,
+  .evaluator-dashboard .quick-actions.three {
+    grid-template-columns: 1fr !important; /* stack blue cards */
+  }
+  .evaluator-dashboard .kpi-grid {
+    grid-template-columns: repeat(
+      2,
+      minmax(0, 1fr)
+    ) !important; /* 2-up yellow cards */
+  }
+}
+
+/* ---- Small phones: keep 2-up KPI, slightly tighter gaps (optional) ---- */
+@media (max-width: 520px) {
+  .evaluator-dashboard .kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 12px !important;
+  }
+}
+
+/* ---- Large iPad Pro M4 (1032×1376) — force 2-col KPI, keep blue cards in one row ---- */
+@media (width: 1032px) and (height: 1376px),
+  (width: 1376px) and (height: 1032px) {
+  .evaluator-dashboard .kpi-grid {
+    grid-template-columns: repeat(
+      2,
+      minmax(0, 1fr)
+    ) !important; /* 2-up yellow cards */
+  }
+  .evaluator-dashboard .quick-actions,
+  .evaluator-dashboard .quick-actions.three {
+    grid-template-columns: repeat(
+      3,
+      minmax(0, 1fr)
+    ) !important; /* one row of blue cards */
+  }
+}

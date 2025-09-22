@@ -1,0 +1,489 @@
+/* ========================================================================
+   Student Reports — FULL CSS (2025-09-05d, card<->table height sync fixed)
+   - Same header visuals
+   - Single inner scroller (Y+X) with sticky thead & native vertical resize
+   - Container (card) no longer stretches; it follows the scroller height
+   ======================================================================== */
+
+:root {
+  --stud-blue: #0c2d52;
+  --stud-gold: #ffd700;
+  --stud-border-blue: #0047ab;
+
+  --content-vpad: clamp(12px, 2vw, 24px);
+  --content-bpad-extra: 6px;
+  --bottom-nav-h: 96px;
+
+  --card-radius: 16px;
+  --card-pad: clamp(10px, 1.6vw, 12px);
+  --card-gap: 10px;
+
+  --row-h: 40px;
+  --head-h: 44px;
+  --rows-visible: 10;
+  --table-font: 14px;
+  --table-min-w: 980px;
+
+  --table-top-gap: 14px;
+  --table-bottom-gap: 2px;
+  --header-estimate: 110px;
+}
+
+/* =============== Page scaffold =============== */
+.student-reports {
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+.student-reports main {
+  padding-bottom: calc(var(--bottom-nav-h) + 8px);
+}
+
+.student-reports .global-container {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  min-height: 100svh;
+  max-width: 100%;
+}
+.student-reports .sidebar {
+  position: sticky;
+  top: 0;
+  height: 100svh;
+  align-self: start;
+  overflow: hidden;
+}
+.student-reports main {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.student-reports .content-scrollable {
+  padding: var(--content-vpad);
+  padding-bottom: calc(
+    var(--content-bpad-extra) + var(--bottom-nav-h) +
+      env(safe-area-inset-bottom)
+  );
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: visible;
+}
+
+/* ================= MOBILE/TABLET OVERRIDES ================= */
+@media (max-width: 1024px) {
+  .student-reports .global-container {
+    grid-template-columns: 1fr;
+  }
+
+  .student-reports .sidebar {
+    position: fixed;
+    left: 0;
+    top: var(--header-offset, 64px);
+    height: calc(100svh - var(--header-offset, 64px));
+    width: var(--sidebar-width, 260px);
+    max-width: 86vw;
+    transform: translateX(-100%);
+    transition: transform 0.28s ease;
+    z-index: 1100;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+  }
+  body.sidebar-open .student-reports .sidebar {
+    transform: translateX(0);
+  }
+
+  .sidebar-overlay {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    top: var(--header-offset, 64px);
+    background: rgba(0, 0, 0, 0.35);
+    z-index: 1090;
+    display: none;
+  }
+  body.sidebar-open .sidebar-overlay {
+    display: block;
+  }
+}
+
+/* ================= Enrollment Details (TOP) ================= */
+.student-reports .report-card {
+  background: #fff;
+  border: 2px solid var(--stud-border-blue);
+  border-radius: var(--card-radius);
+  padding: var(--card-pad);
+}
+.student-reports .report-card > h2 {
+  margin: 0 0 10px 0;
+  font-size: clamp(18px, 1.9vw, 20px);
+  font-weight: 800;
+  color: var(--stud-blue);
+  line-height: 1.2;
+}
+
+.student-reports .report-details {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+@media (min-width: 768px) {
+  .student-reports .report-details {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+@media (min-width: 1280px) {
+  .student-reports .report-details {
+    grid-template-columns: repeat(6, 1fr);
+  }
+}
+
+.student-reports .detail-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  min-height: 36px;
+  padding: 8px 12px;
+  border: 1px solid #d7e0f4;
+  border-radius: 10px;
+  background: #f6f8fc;
+}
+.student-reports .detail-label {
+  font-size: 12px;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: #5a6b87;
+  font-weight: 800;
+  white-space: nowrap;
+}
+.student-reports .detail-label::after {
+  content: ":";
+  margin: 0 4px;
+  color: #5a6b87;
+}
+.student-reports .detail-value {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--stud-blue);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.student-reports .status-official {
+  color: #0b5f2a;
+  background: #e7f7ec;
+  border: 1px solid #c9efda;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-weight: 900;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+/* ================= Enrollment Summary (TABLE CARD) ================= */
+/* KEY CHANGES:
+   - Remove forced stretch: card sizes to content (so it follows the scroller)
+   - No hard min/max height on the card
+*/
+.student-reports .reports-card {
+  position: relative;
+  background: #fff;
+  border: 2px solid var(--stud-border-blue);
+  border-radius: var(--card-radius);
+  padding: var(--card-pad);
+  display: flex;
+  flex-direction: column;
+  gap: var(--card-gap);
+
+  /* <-- the fix: don't stretch the card; let its height follow contents */
+  flex: 0 0 auto;
+  min-height: 0;
+  max-height: none;
+  height: auto;
+
+  overflow: hidden; /* keep rounded corners while inner scroller moves */
+}
+
+.student-reports .reports-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.student-reports .reports-title {
+  margin: 0;
+  font-size: clamp(18px, 1.9vw, 20px);
+  font-weight: 800;
+  color: var(--stud-blue);
+}
+.student-reports .units-summary {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 12px;
+  font-size: clamp(13px, 1.6vw, 16px);
+  color: var(--stud-blue);
+}
+.student-reports .units-range {
+  color: #5a6b87;
+}
+
+/* The ONLY scroller (Y+X); default capped by rows; native resize enabled */
+.student-reports .summary-table-container.table-scroll {
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  background: #fff;
+  flex: 1 1 auto;
+  min-height: 140px;
+  max-width: 100%;
+  margin-top: var(--table-top-gap);
+  margin-bottom: var(--table-bottom-gap);
+
+  overflow-y: auto;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable both-edges;
+  touch-action: pan-x pan-y;
+
+  /* default visible rows cap */
+  max-height: calc(var(--head-h) + var(--row-h) * var(--rows-visible));
+  resize: vertical; /* native corner; JS drag handle complements this */
+}
+
+/* When the user resizes (JS adds .is-resized on the card), lift the cap so
+   the scroller can grow and the card grows with it. */
+.student-reports .reports-card.is-resized .summary-table-container {
+  max-height: 100%;
+}
+
+/* Table */
+.student-reports .summary-table {
+  width: 100%;
+  min-width: var(--table-min-w);
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: auto;
+  font-size: var(--table-font);
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+.student-reports .summary-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background-color: var(--stud-blue);
+  color: var(--stud-gold);
+}
+.student-reports .summary-table th {
+  height: var(--head-h);
+  padding: 10px 14px;
+  text-align: left;
+  font-weight: 800;
+  white-space: nowrap;
+}
+.student-reports .summary-table td {
+  height: var(--row-h);
+  padding: 10px 14px;
+  border-bottom: 1px solid #eee;
+  vertical-align: middle;
+}
+.student-reports .summary-table tbody tr:nth-child(even) {
+  background: #f8fafc;
+}
+.student-reports .summary-table tbody tr:hover {
+  background: #f1f5f9;
+  transition: background-color 0.2s ease;
+}
+
+/* Drag handle (visual parity with Admin) */
+.student-reports .reports-resize-handle {
+  position: relative;
+  height: 14px;
+  margin-top: 6px;
+  cursor: ns-resize;
+  touch-action: none;
+  user-select: none;
+  border-radius: 8px;
+  background: radial-gradient(
+        circle at 50% 6px,
+        rgba(0, 0, 0, 0.18) 0 2px,
+        transparent 2px
+      )
+      8px 0/16px 8px repeat-x,
+    radial-gradient(
+        circle at 50% 10px,
+        rgba(0, 0, 0, 0.12) 0 1px,
+        transparent 1px
+      )
+      16px 0/16px 8px repeat-x;
+  z-index: 3;
+}
+
+/* X-scroll hint */
+.student-reports .scroll-hint-overlay {
+  position: fixed;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 9999;
+}
+.student-reports .scroll-hint-overlay[data-open="1"] {
+  display: flex;
+}
+.student-reports .scroll-hint {
+  background: rgba(12, 45, 82, 0.92);
+  color: #fff;
+  padding: 14px 18px;
+  border-radius: 10px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+  font-size: 15px;
+  line-height: 1.35;
+  text-align: center;
+  max-width: 86vw;
+}
+.student-reports .scroll-hint b {
+  color: var(--stud-gold);
+}
+
+/* Scroller scrollbars only */
+.student-reports .summary-table-container.table-scroll::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.student-reports
+  .summary-table-container.table-scroll::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05);
+}
+.student-reports
+  .summary-table-container.table-scroll::-webkit-scrollbar-thumb {
+  background: rgba(0, 71, 171, 0.3);
+  border-radius: 4px;
+}
+.student-reports
+  .summary-table-container.table-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 71, 171, 0.5);
+}
+
+/* =================== Responsive tightening =================== */
+@media (min-width: 640px) {
+  :root {
+    --row-h: 42px;
+    --rows-visible: 12;
+  }
+}
+@media (min-width: 768px) {
+  :root {
+    --row-h: 44px;
+    --head-h: 44px;
+    --rows-visible: 16;
+  }
+  .student-reports .summary-table th,
+  .student-reports .summary-table td {
+    padding: 10px 12px;
+  }
+}
+@media (min-width: 1280px) {
+  .student-reports {
+    overflow: hidden;
+  }
+  .student-reports .content-scrollable {
+    overflow: hidden;
+  }
+  .student-reports .summary-table-container.table-scroll {
+    overflow-x: hidden;
+  }
+  .student-reports .summary-table {
+    min-width: 100%;
+  }
+}
+@media (min-width: 1440px) {
+  .student-reports .content-scrollable {
+    padding: clamp(20px, 2vw, 32px);
+  }
+}
+
+/* Safety */
+.student-reports .content-scrollable,
+.student-reports .reports-card,
+.student-reports .report-card,
+.student-reports .summary-table-container {
+  max-width: 100%;
+  box-sizing: border-box;
+}
+/* ===== PAGE SCROLL FIX (let the whole page scroll when the table grows) === */
+@media (min-width: 1280px) {
+  /* Keep horizontal overflow hidden to avoid a second X scrollbar, but
+     allow vertical scrolling at the page level. */
+  .student-reports {
+    overflow-x: hidden;
+    overflow-y: auto; /* was hidden */
+  }
+
+  /* Content wrapper should not trap vertical scroll; let it expand. */
+  .student-reports .content-scrollable {
+    overflow-x: hidden;
+    overflow-y: visible; /* was hidden */
+  }
+
+  /* Keep previous desktop behavior for the table region. */
+  .student-reports .summary-table-container.table-scroll {
+    overflow-x: hidden;
+  }
+  .student-reports .summary-table {
+    min-width: 100%;
+  }
+}
+
+/* ==== Enrollment Details: auto-splitting & no-truncation ================== */
+/* Min width per detail chip; adjust if you want more/less columns */
+:root {
+  --detail-col-min: 240px; /* 240–280 works well with your design */
+}
+
+/* Auto-fit as many columns as fit; remaining items wrap to new rows */
+.student-reports .report-details {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(var(--detail-col-min), 1fr));
+  gap: 10px;
+}
+
+/* Let rows grow vertically when values wrap */
+.student-reports .detail-row {
+  align-items: flex-start; /* top-align for multi-line values */
+  min-height: 0; /* remove fixed minimum so it can grow */
+  padding: 10px 12px; /* tiny bump for nicer multi-line spacing */
+}
+
+/* Keep the label compact; no wrapping needed */
+.student-reports .detail-label {
+  white-space: nowrap;
+  flex: 0 0 auto;
+}
+
+/* Make the value fill the remaining space and wrap cleanly */
+.student-reports .detail-value {
+  flex: 1 1 auto; /* take remaining width in the chip */
+  min-width: 0;
+  white-space: normal; /* allow wrapping (remove nowrap) */
+  overflow: visible; /* show full content */
+  text-overflow: clip; /* no ellipsis */
+  line-height: 1.25;
+  word-break: break-word; /* break long words if necessary */
+  overflow-wrap: anywhere; /* prevent overflow on long strings */
+}
+
+/* Keep the status pill looking the same even on multi-line rows */
+.student-reports .status-official {
+  align-self: center;
+  white-space: nowrap;
+}

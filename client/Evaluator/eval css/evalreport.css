@@ -1,0 +1,522 @@
+/* ==========================================================================
+   Evaluator Reports — SCOPED STYLES ONLY (2025-09, complete)
+   - Prev / Chooser / Next always together (grid areas)
+   - Separate table card with the ONLY scroller (.table-scroll)
+   - Sticky thead; --report-table-min-w forces X-scroll below desktop
+   - Native vertical resize + custom handle (.reports-resize-handle)
+   - Viewport-centered X-scroll hint overlay (shown via JS)
+   - Centered Download PDF button OUTSIDE the card
+   - Desktop: no X-scroll
+   ========================================================================== */
+
+:root {
+  /* Palette parity */
+  --reports-blue: #0c2d52;
+  --reports-gold: #ffd700;
+  --reports-border-blue: #0047ab;
+
+  /* Layout knobs */
+  --reports-content-pad: clamp(12px, 2vw, 24px);
+  --reports-card-pad: 12px;
+  --reports-card-radius: 16px;
+
+  /* Table knobs */
+  --report-font: 14px;
+  --report-head-font: 14px;
+  --report-padY: 12px;
+  --report-padX: 16px;
+
+  /* Enforce horizontal overflow under desktop (same as StudList) */
+  --report-table-min-w: 1120px;
+
+  /* Row height caps for scroll window */
+  --report-row-h: 48px;
+  --report-rows: 10;
+
+  /* Bottom nav estimate to protect it on mobile */
+  --bottom-nav-h: 96px;
+}
+
+/* Main padding bottom for the fixed bottom nav */
+.evaluator-reports main {
+  padding-bottom: 100px;
+}
+
+/* --------------------------------------------------------------------------
+   TOP BAR (Navigator + Current Student)
+   - Prev / Chooser / Next are locked together via grid areas.
+   -------------------------------------------------------------------------- */
+.evaluator-reports .reports-topbar {
+  background: var(--reports-blue);
+  color: #fff;
+  margin: 16px 40px 16px;
+  padding: 14px;
+  border-radius: 12px;
+
+  display: grid;
+  /* Keep the trio in one row; current card occupies the remainder */
+  grid-template-columns: 44px minmax(220px, 420px) 44px 1fr;
+  grid-template-areas: "prev chooser next current";
+  gap: 12px;
+  align-items: center;
+
+  /* Prevent internal overflow forcing line-breaks */
+  min-width: 0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Guarantee group elements can shrink instead of pushing to a new line */
+.evaluator-reports .reports-topbar > * {
+  min-width: 0;
+}
+
+/* Area assignments */
+.evaluator-reports .reports-topbar .switch-btn.prev {
+  grid-area: prev;
+}
+.evaluator-reports .reports-topbar .student-chooser {
+  grid-area: chooser;
+}
+.evaluator-reports .reports-topbar .switch-btn.next {
+  grid-area: next;
+}
+.evaluator-reports .reports-topbar .current-student {
+  grid-area: current;
+}
+
+/* Prev/Next buttons (gold) */
+.evaluator-reports .reports-topbar .switch-btn {
+  height: 42px;
+  width: 44px;
+  border-radius: 10px;
+  border: none;
+  background: var(--reports-gold);
+  color: var(--reports-blue);
+  font-size: 16px;
+  cursor: pointer;
+  transition: transform 0.05s ease, filter 0.15s ease;
+  min-width: 44px; /* keep button width stable */
+  flex: 0 0 auto;
+}
+.evaluator-reports .reports-topbar .switch-btn:hover {
+  filter: brightness(0.98);
+}
+.evaluator-reports .reports-topbar .switch-btn:active {
+  transform: translateY(1px);
+}
+
+/* Themed Combobox (student chooser) — shrinks gracefully with ellipsis */
+.evaluator-reports .reports-topbar .student-chooser {
+  position: relative;
+  max-width: 420px;
+  min-width: 0; /* allow shrink in grid */
+}
+.evaluator-reports .reports-topbar .combo-toggle {
+  width: 100%;
+  height: 40px;
+  background: #ffffff;
+  border: 2px solid #e6eef6;
+  color: var(--reports-blue);
+  border-radius: 10px;
+  padding: 0 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: box-shadow 0.15s ease, border-color 0.15s ease;
+  min-width: 0; /* ellipsis can happen */
+}
+.evaluator-reports .reports-topbar .combo-toggle:focus-visible {
+  outline: none;
+  border-color: var(--reports-gold);
+  box-shadow: 0 0 0 3px rgba(255, 215, 0, 0.35);
+}
+.evaluator-reports .reports-topbar .combo-label {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+.evaluator-reports .reports-topbar .combo-panel {
+  position: absolute;
+  z-index: 20;
+  top: 44px;
+  left: 0;
+  right: 0;
+  background: #ffffff;
+  border: 2px solid var(--reports-gold);
+  border-radius: 12px;
+  box-shadow: 0 12px 28px rgba(12, 45, 82, 0.25);
+  padding: 8px;
+}
+.evaluator-reports .reports-topbar .combo-panel[hidden] {
+  display: none;
+}
+.evaluator-reports .reports-topbar .combo-search {
+  display: grid;
+  grid-template-columns: 20px 1fr;
+  align-items: center;
+  gap: 8px;
+  background: #f5f6fa;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 6px 8px;
+  color: #375d83;
+  margin-bottom: 8px;
+}
+.evaluator-reports .reports-topbar .combo-search input {
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 14px;
+  color: var(--reports-blue);
+}
+.evaluator-reports .reports-topbar .combo-options {
+  list-style: none;
+  margin: 0;
+  padding: 4px 0;
+  max-height: 220px;
+  overflow: auto;
+}
+.evaluator-reports .reports-topbar .combo-option {
+  padding: 8px 10px;
+  border-radius: 8px;
+  margin: 0 4px;
+  cursor: pointer;
+  color: var(--reports-blue);
+  font-weight: 600;
+}
+.evaluator-reports .reports-topbar .combo-option:hover {
+  background: var(--reports-blue);
+  color: var(--reports-gold);
+}
+.evaluator-reports .reports-topbar .combo-option[aria-selected="true"] {
+  background: var(--reports-gold);
+  color: var(--reports-blue);
+}
+.evaluator-reports .reports-topbar .combo-option.hidden {
+  display: none;
+}
+
+/* Current Student (expanded card) */
+.evaluator-reports .current-student {
+  background: #ffffff;
+  border: 2px solid var(--reports-gold);
+  border-radius: 12px;
+  padding: 14px 16px;
+  display: grid;
+  grid-template-columns: 64px 1fr;
+  gap: 14px;
+  align-items: center;
+  color: var(--reports-blue);
+  min-height: 110px;
+  min-width: 0;
+}
+
+.evaluator-reports .current-student .avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: #f0f4f8;
+  border: 2px solid #e6eef6;
+  font-size: 30px;
+}
+.evaluator-reports .current-student .name-line {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  min-width: 0;
+}
+.evaluator-reports .current-student .name {
+  font-weight: 800;
+  font-size: 17px;
+  line-height: 1.15;
+  color: var(--reports-blue);
+}
+.evaluator-reports .current-student .meta-inline {
+  font-size: 13px;
+  font-weight: 900;
+  color: var(--reports-blue);
+  opacity: 0.95;
+}
+
+/* When space is tight, ONLY the Current Student card moves below.
+   The trio (prev / chooser / next) remains together. */
+@media (max-width: 960px) {
+  .evaluator-reports .reports-topbar {
+    grid-template-columns: 44px 1fr 44px;
+    grid-template-areas:
+      "prev chooser next"
+      "current current current";
+  }
+  .evaluator-reports .reports-topbar .combo-toggle {
+    padding: 0 10px;
+    gap: 6px;
+    height: 38px;
+  }
+  .evaluator-reports .reports-topbar .switch-btn {
+    height: 38px;
+  }
+  .evaluator-reports .current-student {
+    min-height: 100px;
+  }
+}
+
+/* Even tighter: small font & tighter paddings for the chooser to prevent wrap */
+@media (max-width: 420px) {
+  .evaluator-reports .reports-topbar .combo-toggle {
+    padding: 0 8px;
+    gap: 6px;
+    font-size: 13px;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   TABLE CARD (separate from navigator)
+   -------------------------------------------------------------------------- */
+.evaluator-reports .table-section {
+  padding: 0 40px;
+}
+
+.evaluator-reports .reports-card {
+  background: #ffffff;
+  border: 2px solid var(--reports-border-blue);
+  border-radius: var(--reports-card-radius);
+  padding: var(--reports-card-pad);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+  overflow: hidden; /* keep rounded corners */
+}
+
+.evaluator-reports .section-title {
+  text-align: left;
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--reports-blue);
+  margin: 0;
+}
+
+/* The ONLY scroller: Y + X as needed; includes native vertical resize */
+.evaluator-reports .table-scroll {
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  overflow-y: auto;
+  overflow-x: auto;
+  flex: 1 1 auto;
+  min-height: 0;
+  max-width: 100%;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x pan-y;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable both-edges;
+
+  /* Default height cap (≈--report-rows rows + ~48px head) */
+  max-height: calc(var(--report-rows, 10) * var(--report-row-h, 48px) + 48px);
+
+  /* Native vertical resize; custom handle augments this */
+  resize: vertical;
+}
+
+/* When custom resize JS toggles .is-resized on .reports-card,
+   allow the scroll window to expand fully inside the card */
+.evaluator-reports .reports-card.is-resized .table-scroll {
+  max-height: 100%;
+}
+
+/* Custom resize handle (visual parity with other modules; JS binds it) */
+.evaluator-reports .reports-resize-handle {
+  position: relative;
+  height: 14px;
+  margin-top: 6px;
+  cursor: ns-resize;
+  touch-action: none;
+  user-select: none;
+  border-radius: 8px;
+  background: radial-gradient(
+        circle at 50% 6px,
+        rgba(0, 0, 0, 0.18) 0 2px,
+        transparent 2px
+      )
+      8px 0/16px 8px repeat-x,
+    radial-gradient(
+        circle at 50% 10px,
+        rgba(0, 0, 0, 0.12) 0 1px,
+        transparent 1px
+      )
+      16px 0/16px 8px repeat-x;
+}
+
+/* Table visuals (match theme) — header stays single row via ellipsis */
+.evaluator-reports .report-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: var(--report-font);
+  table-layout: auto;
+
+  /* Force X-scroll under desktop */
+  min-width: var(--report-table-min-w);
+}
+.evaluator-reports .report-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+.evaluator-reports .report-table th {
+  background-color: var(--reports-blue);
+  color: var(--reports-gold);
+  padding: var(--report-padY) var(--report-padX);
+  text-align: left;
+  font-weight: 800;
+  height: 48px;
+
+  /* Keep to a single row on tight widths */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.evaluator-reports .report-table td {
+  padding: var(--report-padY) var(--report-padX);
+  border-bottom: 1px solid #eee;
+  vertical-align: middle;
+}
+.evaluator-reports .report-table tbody tr {
+  height: var(--report-row-h);
+}
+.evaluator-reports .report-table tr:nth-child(even) {
+  background-color: #f8f9fa;
+}
+.evaluator-reports .report-table tr:last-child td {
+  border-bottom: none;
+}
+
+/* Desktop: no horizontal scroll; table grows to container */
+@media (min-width: 1280px) {
+  .evaluator-reports .table-scroll {
+    overflow-x: hidden;
+  }
+  .evaluator-reports .report-table {
+    min-width: 100%;
+  }
+}
+
+/* Tighter header & cell sizing on sub-desktop to fit a single header row */
+@media (max-width: 912px) {
+  .evaluator-reports .report-table {
+    font-size: 13.5px;
+  }
+  .evaluator-reports .report-table th,
+  .evaluator-reports .report-table td {
+    padding: 10px 12px;
+  }
+  .evaluator-reports .report-table th {
+    font-size: 13.5px;
+  }
+}
+@media (max-width: 768px) {
+  .evaluator-reports .table-section {
+    padding: 0 20px;
+  }
+  .evaluator-reports .report-table {
+    font-size: 13px;
+  }
+  .evaluator-reports .report-table th,
+  .evaluator-reports .report-table td {
+    padding: 8px 12px;
+  }
+  .evaluator-reports .report-table th {
+    font-size: 13px;
+  }
+}
+
+/* Scrollbar aesthetics for the table area */
+.evaluator-reports .table-scroll::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.evaluator-reports .table-scroll::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05);
+}
+.evaluator-reports .table-scroll::-webkit-scrollbar-thumb {
+  background: rgba(0, 71, 171, 0.3);
+  border-radius: 4px;
+}
+.evaluator-reports .table-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 71, 171, 0.5);
+}
+
+/* --------------------------------------------------------------------------
+   Centered Download Button (OUTSIDE the table card)
+   -------------------------------------------------------------------------- */
+.evaluator-reports .download-actions {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 16px 40px 24px;
+  grid-column: 1 / -1;
+  align-self: center;
+}
+.evaluator-reports .btn-download {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  height: 44px;
+  padding: 0 22px;
+  border-radius: 999px;
+  border: 2px solid #dc3545;
+  background: #dc3545;
+  color: #ffffff;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 0.05s ease, box-shadow 0.15s ease, background 0.15s ease,
+    border-color 0.15s ease;
+}
+.evaluator-reports .btn-download i {
+  color: #ffffff !important;
+}
+.evaluator-reports .btn-download:hover {
+  background: #c82333;
+  border-color: #c82333;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+.evaluator-reports .btn-download:active {
+  transform: translateY(1px);
+}
+
+/* --------------------------------------------------------------------------
+   HORIZONTAL-SCROLL HINT OVERLAY (SCOPED — toggled by JS when X-scroll exists)
+   -------------------------------------------------------------------------- */
+.evaluator-reports .scroll-hint-overlay {
+  position: fixed;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  pointer-events: none;
+}
+.evaluator-reports .scroll-hint-overlay[data-open="1"] {
+  display: flex;
+}
+.evaluator-reports .scroll-hint {
+  background: rgba(12, 45, 82, 0.92);
+  color: #fff;
+  padding: 14px 18px;
+  border-radius: 10px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+  font-size: 15px;
+  line-height: 1.35;
+  text-align: center;
+  max-width: 86vw;
+}
+.evaluator-reports .scroll-hint b {
+  color: var(--reports-gold);
+}

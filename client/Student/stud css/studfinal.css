@@ -1,0 +1,547 @@
+/* =========================================================
+   Student Finalize — SCOPED, RESPONSIVE (v2025-09-03 + grow-sync)
+   Mirrors studassess/admin standard:
+   - Single inner scroller (.table-scroll)
+   - Native vertical resize + custom handle support
+   - Card grows with scroller; page scrolls when grown
+   ========================================================= */
+
+:root {
+  --final-blue: #0c2d52;
+  --final-gold: #ffd700;
+  --final-border: #0047ab;
+
+  --card-radius: 16px;
+  --card-pad: clamp(10px, 1.8vw, 12px);
+
+  --row-h: 44px;
+  --head-h: 48px;
+
+  /* visible rows baseline (default window height) */
+  --final-rows: 10;
+
+  --final-bottom-nav: 96px;
+}
+
+/* ---------- Page wrapper (allow page to grow & scroll) ---------- */
+.finalize {
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto; /* was hidden — allow page to scroll when card grows */
+  overflow-x: hidden;
+}
+
+/* ---------- Main content wrapper ---------- */
+.finalize .content-wrapper {
+  padding: 0 clamp(12px, 2.2vw, 24px);
+  margin-top: clamp(12px, 1.8vw, 16px);
+  padding-bottom: calc(var(--final-bottom-nav) + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: clamp(10px, 1.8vw, 12px);
+  flex: 1 1 auto;
+  min-height: 0; /* allow nested overflow */
+  overflow: visible; /* keep dropdowns / hints visible and let card grow */
+  box-sizing: border-box;
+  max-width: 100%;
+}
+
+/* ================= Card + Scrollable Table ================= */
+.finalize .final-card {
+  position: relative;
+  background: #ffffff;
+  border: 2px solid var(--final-border);
+  border-radius: var(--card-radius);
+  padding: var(--card-pad);
+  display: flex;
+  flex-direction: column;
+  gap: clamp(10px, 1.8vw, 12px);
+  min-height: 0; /* critical for nested overflow */
+  overflow: hidden; /* keep rounded corners clean */
+  box-sizing: border-box;
+
+  /* tidy default cap so initial render doesn’t cover bottom nav */
+  min-height: 220px;
+  max-height: calc(65svh - var(--final-bottom-nav) - 24px);
+}
+
+/* When user resizes (JS adds .is-resized), let the card grow with scroller */
+.finalize .final-card.is-resized {
+  max-height: none;
+  height: auto;
+  overflow: hidden;
+}
+
+.finalize .final-card.is-resized .table-scroll {
+  max-height: 100%;
+}
+
+/* Header row inside the card */
+.finalize .final-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.finalize .final-card-title {
+  font-size: clamp(16px, 1.8vw, 20px);
+  color: var(--final-blue);
+  font-weight: 700;
+  margin: 0;
+}
+.finalize .units-info {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: clamp(13px, 1.6vw, 16px);
+  color: var(--final-blue);
+}
+.finalize .units-label {
+  font-weight: 700;
+}
+.finalize .units-count {
+  font-weight: 800;
+}
+.finalize .units-range {
+  color: #5a6b87;
+}
+
+/* ---------- Scroll area (the ONLY scroller) ---------- */
+.finalize .table-scroll {
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  flex: 1 1 auto;
+  min-height: 0;
+
+  overflow-y: auto; /* vertical scroll inside card */
+  overflow-x: hidden; /* desktop default: no horizontal */
+
+  scrollbar-gutter: stable both-edges;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  touch-action: pan-x pan-y;
+
+  /* Default height window ≈ sticky thead + N rows */
+  height: var(--final-table-h, auto);
+  max-height: var(
+    --final-table-max-h,
+    calc(var(--head-h) + (var(--row-h) * var(--final-rows)))
+  );
+
+  /* Enable native vertical resize; JS keeps card + scroller in sync */
+  resize: vertical;
+}
+
+/* Tablet/phones: allow horizontal scrolling of the table only */
+@media (max-width: 1024px) {
+  .finalize .table-scroll {
+    overflow-x: auto;
+  }
+}
+
+/* ================= Table visuals (theme-consistent) ================= */
+.finalize .finalize-table {
+  min-width: var(
+    --finalize-table-min-w,
+    980px
+  ); /* side-scroll width on small */
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 14px;
+}
+.finalize .finalize-table thead {
+  background: #0047ab;
+  color: #ffffff;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+.finalize .finalize-table th {
+  padding: 12px 16px;
+  color: var(--final-gold);
+  font-weight: 800;
+  text-align: left;
+  border: none;
+  font-size: clamp(12px, 1.5vw, 15px);
+  height: var(--head-h);
+}
+.finalize .finalize-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid #e5e7eb;
+  font-size: clamp(13px, 1.6vw, 15px);
+  height: var(--row-h);
+}
+.finalize .finalize-table tr.row-white {
+  background: #ffffff;
+}
+.finalize .finalize-table tr.row-blue {
+  background: #eff6ff;
+}
+.finalize .finalize-table tbody tr:hover {
+  background: #f1f5f9;
+  transition: background-color 0.2s ease;
+}
+
+/* ================= Actions (CTAs visible on all sizes) ================= */
+.finalize .action-section {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.finalize .action-note {
+  color: #5a6b87;
+  font-size: clamp(12px, 1.5vw, 14px);
+}
+.finalize .action-buttons {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr; /* stack on very narrow */
+  gap: 10px;
+}
+.finalize .btn-submit,
+.finalize .btn-message {
+  min-height: 44px;
+  width: 100%;
+  padding: clamp(10px, 1.8vw, 12px) clamp(16px, 2.2vw, 24px);
+  border-radius: 9999px;
+  font-weight: 600;
+  font-size: clamp(13px, 1.6vw, 16px);
+  transition: all 0.2s ease;
+  cursor: pointer;
+  border: none;
+  outline: none;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.finalize .btn-submit {
+  background: #ef4444;
+  color: #ffffff;
+}
+.finalize .btn-submit:hover {
+  background: #dc2626;
+}
+.finalize .btn-message {
+  background: var(--final-gold);
+  color: var(--final-blue);
+}
+.finalize .btn-message:hover {
+  background: #fbbf24;
+}
+
+/* ≥421px: 2-up grid for CTAs */
+@media (min-width: 421px) {
+  .finalize .action-buttons {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* ≥769px: inline CTAs */
+@media (min-width: 769px) {
+  .finalize .action-section {
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+  }
+  .finalize .action-buttons {
+    width: auto;
+    display: inline-flex;
+    gap: 12px;
+  }
+  .finalize .btn-submit,
+  .finalize .btn-message {
+    width: auto;
+  }
+}
+
+/* ===================== Modal Styles (scoped) ===================== */
+.finalize .modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+.finalize .modal-overlay.hidden {
+  display: none;
+}
+
+.finalize .modal-content {
+  background: #ffffff;
+  width: min(95%, 540px);
+  border-radius: 12px;
+  padding: clamp(16px, 2vw, 24px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+}
+
+/* Validation Modal */
+.finalize .validation-modal {
+  text-align: center;
+  border-top: 8px solid #ef4444;
+}
+.finalize .modal-icon.validation-icon {
+  color: #ef4444;
+  font-size: 48px;
+}
+.finalize .modal-title {
+  font-size: clamp(16px, 1.8vw, 20px);
+  font-weight: 700;
+  margin-bottom: 8px;
+  color: var(--final-blue);
+}
+.finalize .modal-subtitle {
+  color: #6b7280;
+  font-size: clamp(12px, 1.5vw, 14px);
+  margin-bottom: 16px;
+}
+.finalize .modal-units-info {
+  margin-bottom: 24px;
+}
+.finalize .modal-total-units {
+  font-weight: 700;
+  color: var(--final-blue);
+  margin-bottom: 4px;
+}
+.finalize .modal-units-range {
+  font-size: 14px;
+  color: #374151;
+  margin-bottom: 8px;
+}
+.finalize .modal-note {
+  font-style: italic;
+  font-size: 14px;
+  color: #6b7280;
+}
+
+/* Message Modal */
+.finalize .message-modal {
+  max-width: 600px;
+}
+.finalize .modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 8px;
+  margin-bottom: 16px;
+}
+.finalize .modal-nav {
+  display: flex;
+  gap: 16px;
+  color: var(--final-blue);
+  font-size: 14px;
+}
+.finalize .modal-nav-item {
+  cursor: pointer;
+}
+.finalize .modal-nav-item i {
+  margin-right: 4px;
+}
+.finalize .modal-form {
+  margin-bottom: 24px;
+}
+.finalize .form-group {
+  margin-bottom: 16px;
+}
+.finalize .form-label {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 4px;
+}
+.finalize .form-select,
+.finalize .form-textarea {
+  width: 100%;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 14px;
+  background: white;
+}
+.finalize .form-textarea {
+  border-radius: 8px;
+  resize: none;
+  font-family: inherit;
+}
+.finalize .modal-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+}
+.finalize .btn-cancel,
+.finalize .btn-confirm {
+  padding: 8px 24px;
+  border-radius: 9999px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.finalize .btn-cancel {
+  border: 1px solid #6b7280;
+  color: #374151;
+  background: white;
+}
+.finalize .btn-cancel:hover {
+  background: #f9fafb;
+}
+.finalize .btn-confirm {
+  background: #ef4444;
+  color: white;
+  border: none;
+}
+.finalize .btn-confirm:hover {
+  background: #dc2626;
+}
+/* Send button variant for message modal */
+.finalize .message-modal .btn-confirm {
+  background: var(--final-gold);
+  color: var(--final-blue);
+}
+.finalize .message-modal .btn-confirm:hover {
+  background: #fbbf24;
+}
+
+/* =================== Responsive tightening =================== */
+@media (max-width: 640px) {
+  .finalize .finalize-table th,
+  .finalize .finalize-table td {
+    padding: 8px 12px;
+  }
+}
+@media (max-width: 520px) {
+  .finalize .final-card {
+    padding: 10px;
+  }
+  .finalize .finalize-table {
+    min-width: var(--finalize-table-min-w, 900px);
+  }
+}
+
+/* Hi-DPI “1366-ish” laptops: minor height bump */
+@media (max-width: 1366px) and (min-resolution: 1.25dppx) {
+  .finalize .table-scroll {
+    max-height: var(
+      --final-table-max-h,
+      calc(var(--head-h) + (var(--row-h) * 11))
+    );
+  }
+}
+
+/* =================== Centered scroll hint overlay =================== */
+.finalize .scroll-hint-overlay {
+  position: fixed;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 1200;
+  pointer-events: none;
+}
+.finalize .scroll-hint-overlay[data-open="1"] {
+  display: flex;
+}
+.finalize .scroll-hint {
+  background: rgba(12, 45, 82, 0.92);
+  color: #fff;
+  padding: 12px 16px;
+  border-radius: 10px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+  font-size: 15px;
+  line-height: 1.35;
+  text-align: center;
+  max-width: 86vw;
+}
+.finalize .scroll-hint b {
+  color: var(--final-gold);
+}
+
+/* =================== Resize handle =================== */
+.finalize .final-resize-handle {
+  position: relative;
+  height: 14px;
+  margin-top: 6px;
+  cursor: ns-resize;
+  touch-action: none;
+  user-select: none;
+  border-radius: 8px;
+  background: radial-gradient(
+        circle at 50% 6px,
+        rgba(0, 0, 0, 0.18) 0 2px,
+        transparent 2px
+      )
+      8px 0/16px 8px repeat-x,
+    radial-gradient(
+        circle at 50% 10px,
+        rgba(0, 0, 0, 0.12) 0 1px,
+        transparent 1px
+      )
+      16px 0/16px 8px repeat-x;
+}
+
+/* ===== Desktop header paint fix to keep rounded corners crisp ===== */
+@media (min-width: 1025px) {
+  .finalize .table-scroll {
+    background: #fff;
+  }
+  .finalize .finalize-table thead {
+    background: transparent;
+  }
+  .finalize .finalize-table thead th {
+    background-color: #0047ab;
+    color: var(--final-gold);
+  }
+  .finalize .finalize-table thead th:first-child {
+    border-top-left-radius: 10px;
+  }
+  .finalize .finalize-table thead th:last-child {
+    border-top-right-radius: 10px;
+  }
+}
+
+/* =========================================================
+   OVERRIDE — Mobile & Tablet only (≤1024px)
+   Keep CTAs side-by-side and auto-shrink to fit.
+   Desktop (≥1025px) remains unchanged.
+   ========================================================= */
+@media (max-width: 1024px) {
+  .finalize .action-buttons {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr;
+    gap: clamp(6px, 2.5vw, 12px);
+    width: 100%;
+  }
+  .finalize .btn-submit,
+  .finalize .btn-message {
+    width: 100%;
+    min-height: 38px;
+    padding: clamp(6px, 2.4vw, 10px) clamp(10px, 4vw, 14px);
+    font-size: clamp(11.5px, 3.4vw, 14px);
+    border-radius: 9999px;
+    white-space: nowrap;
+  }
+  .finalize .btn-submit i,
+  .finalize .btn-message i {
+    margin-right: 6px;
+  }
+}
+
+/* Extra-tight phones */
+@media (max-width: 380px) {
+  .finalize .btn-submit,
+  .finalize .btn-message {
+    min-height: 34px;
+    padding: 6px 8px;
+    font-size: 11.5px;
+  }
+}

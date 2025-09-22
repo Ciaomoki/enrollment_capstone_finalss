@@ -1,0 +1,548 @@
+/* ========================================================================
+    Admin Curriculum — Modern, Range-based Responsiveness (2025-09-01)
+    Single resize handle (blue container). Table follows height.
+    Phones ≈10 rows, Tablets ≈20 rows; desktop static with no row cap.
+    Horizontal scroll isolated to table on sub-desktop. Footer always visible.
+    Spacing knobs: --table-top-gap, --table-bottom-gap, --footer-top-margin,
+                    --content-bpad-extra
+    ======================================================================== */
+
+:root {
+  /* Brand */
+  --curric-blue: #0c2d52;
+  --curric-gold: #ffd700;
+  --curric-border-blue: #0047ab;
+
+  /* Frame / structural paddings */
+  --card-radius: 16px;
+  --content-vpad: clamp(12px, 2vw, 24px); /* content top padding */
+  --card-vpad: clamp(10px, 1.6vw, 12px); /* card top/bottom padding */
+  --card-gap: 8px; /* gap between header & table */
+
+  /* === SPACING KNOBS (adjust these) === */
+  --table-top-gap: 16px; /* ↑ space ABOVE the table container inside the card */
+  --table-bottom-gap: 2px; /* ↓ fine space between table container & footer */
+  --footer-top-margin: 4px; /* ↓ margin above footer row */
+  --content-bpad-extra: 4px; /* ↓ extra padding above bottom nav */
+
+  /* Table */
+  --table-font: 14px;
+  --table-min-w: 1120px; /* force X-overflow on narrow devices (many columns) */
+
+  /* Manual-resize controls (container only) */
+  --table-min-h: 120px; /* minimum inner table area height */
+  --resize-handle: 12px; /* visual affordance size on card corner */
+
+  /* Layout budgets */
+  --bottom-nav-h: 96px; /* global bottom nav height */
+  --footer-min-h: 56px; /* one-line footer height */
+  --header-estimate: 200px; /* title + filters total height (conservative) */
+
+  /* Row sizing & caps (mobile-first; overridden per range) */
+  --row-h: 40px;
+  --head-h: 40px;
+  --rows-visible: 10; /* phones default ≈ 10 rows */
+}
+
+/* =========================================================================
+    PAGE SCAFFOLD (mobile-first)
+    ========================================================================= */
+.admin-curriculum {
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+
+  overflow-x: hidden; /* NEVER allow page-level X scroll (protect bottom nav) */
+  overflow-y: auto; /* sub-desktop: allow page to scroll if needed */
+}
+
+.admin-curriculum .content-scrollable {
+  padding: var(--content-vpad);
+  /* Bottom padding = extra gap + bottom nav + safe area */
+  padding-bottom: calc(
+    var(--content-bpad-extra) + var(--bottom-nav-h) +
+      env(safe-area-inset-bottom)
+  );
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1 1 auto;
+  min-height: 0; /* critical for inner flex scrollers */
+  overflow-x: hidden; /* isolate X scroll to .table-scroll only */
+  overflow-y: visible; /* page may scroll on phones/tablets */
+}
+
+/* =========================================================================
+    CARD (blue frame) — THE ONLY RESIZE HANDLE (custom via JS)
+    ========================================================================= */
+.admin-curriculum .curric-card {
+  position: relative; /* for the resize affordance */
+  background: #fff;
+  border: 2px solid var(--curric-border-blue);
+  border-radius: var(--card-radius);
+  padding: var(--card-vpad);
+  display: flex;
+  flex-direction: column;
+  gap: var(--card-gap);
+
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden; /* child scroller owns overflow */
+
+  /* No native CSS resize; single custom handle via JS works on desktop+mobile */
+  resize: none;
+
+  /* Safe minimum: header + top gap + minimum table area + bottom gap + vertical paddings */
+  min-height: calc(
+    var(--header-estimate) + var(--table-top-gap) + var(--table-min-h) +
+      var(--table-bottom-gap) + (var(--card-vpad) + var(--card-vpad))
+  );
+
+  /* Viewport-aware cap so footer stays visible across sizes (incl. 864/900) */
+  max-height: calc(
+    100svh - var(--bottom-nav-h) - var(--footer-min-h) -
+      var(--content-bpad-extra) - var(--content-vpad)
+  );
+}
+
+/* Single, subtle resize affordance (we’ll attach pointer events in JS) */
+.admin-curriculum .curric-resize-handle {
+  position: relative;
+  height: 14px;
+  margin-top: 6px; /* tiny space below table area inside the card */
+  cursor: ns-resize;
+  touch-action: none; /* allow vertical drag on touch */
+  user-select: none;
+  border-radius: 8px;
+
+  /* visual “grip” */
+  background: radial-gradient(
+        circle at 50% 6px,
+        rgba(0, 0, 0, 0.18) 0 2px,
+        transparent 2px
+      )
+      8px 0/16px 8px repeat-x,
+    radial-gradient(
+        circle at 50% 10px,
+        rgba(0, 0, 0, 0.12) 0 1px,
+        transparent 1px
+      )
+      16px 0/16px 8px repeat-x;
+}
+
+/* Header (title + filters) */
+.admin-curriculum .curric-card-header {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 0 0 auto;
+}
+
+.admin-curriculum .curric-title {
+  font-size: clamp(18px, 1.9vw, 20px);
+  font-weight: 700;
+  color: var(--curric-blue);
+  margin: 0;
+  text-align: center;
+}
+
+/* =========================================================================
+    FILTERS RAIL — left-aligned, full horizontal scroll (Student List parity)
+    ========================================================================= */
+.admin-curriculum .filters-rail {
+  /* grid-based scroller so width = sum of chips */
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: max-content;
+  gap: 16px;
+
+  /* horizontal scroll only */
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x pinch-zoom;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+
+  /* keep chips fully visible at both edges */
+  padding: 2px 10px 6px;
+
+  /* always left-aligned */
+  justify-content: start;
+
+  /* optional snap for nicer feel */
+  scroll-snap-type: x proximity;
+}
+.admin-curriculum .filters-rail::-webkit-scrollbar {
+  height: 6px;
+}
+.admin-curriculum .filters-rail::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 999px;
+}
+.admin-curriculum .filter-group {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  white-space: nowrap;
+  scroll-snap-align: start;
+}
+.admin-curriculum .filter-group label {
+  font-size: clamp(12px, 1.3vw, 14px);
+  color: #555;
+  font-weight: 600;
+}
+.admin-curriculum .filter-group select {
+  width: clamp(140px, 18vw, 180px);
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  background: #fff;
+  font-size: clamp(12.5px, 1.5vw, 14px);
+  line-height: 1.2;
+}
+
+/* Phones: slightly tighter chips */
+@media (max-width: 768px) {
+  .admin-curriculum .filters-rail {
+    gap: 12px;
+  }
+  .admin-curriculum .filter-group select {
+    width: clamp(136px, 36vw, 150px);
+  }
+}
+@media (max-width: 480px) {
+  .admin-curriculum .filters-rail {
+    gap: 10px;
+  }
+  .admin-curriculum .filter-group select {
+    width: clamp(128px, 44vw, 140px);
+  }
+}
+
+/* =========================================================================
+    THE ONLY SCROLLER (Y + X) — inside the card (not resizable)
+    ========================================================================= */
+.admin-curriculum .table-scroll {
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+
+  overflow-y: auto; /* vertical scroll lives here */
+  overflow-x: auto; /* horizontal scroll lives here on sub-desktop */
+
+  flex: 1 1 auto;
+  min-height: var(--table-min-h);
+  max-width: 100%;
+  margin-top: var(--table-top-gap);
+  margin-bottom: var(--table-bottom-gap);
+
+  -webkit-overflow-scrolling: touch;
+  scrollbar-gutter: stable both-edges;
+  overscroll-behavior: contain;
+  touch-action: pan-x pan-y;
+
+  /* Default caps (phones/tablets): ~10/20 rows + short-height guard */
+  max-height: min(
+    calc(var(--head-h) + var(--row-h) * var(--rows-visible)),
+    calc(
+      100svh - var(--bottom-nav-h) - var(--footer-min-h) -
+        var(--content-bpad-extra) - var(--content-vpad) -
+        (var(--card-vpad) + var(--card-vpad)) - var(--card-gap) -
+        var(--table-top-gap) - var(--header-estimate)
+    )
+  );
+
+  /* IMPORTANT: no native resize here */
+  resize: none;
+}
+
+/* When user resizes the container, let table fill it 1:1 on ALL widths */
+.admin-curriculum .curric-card.is-resized .table-scroll {
+  max-height: 100%;
+}
+
+/* =========================================================================
+    TABLE VISUALS
+    ========================================================================= */
+.admin-curriculum .curric-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: auto;
+  font-size: var(--table-font);
+  word-break: break-word;
+  overflow-wrap: anywhere;
+
+  /* Base: force wide table so X-scroll exists on narrow devices */
+  min-width: var(--table-min-w);
+}
+.admin-curriculum .curric-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--curric-blue);
+  color: var(--curric-gold);
+}
+.admin-curriculum .curric-table th {
+  padding: clamp(10px, 1.6vw, 12px) clamp(12px, 2vw, 16px);
+  text-align: left;
+  font-weight: 800;
+  border: none;
+  white-space: nowrap;
+  height: var(--head-h);
+}
+.admin-curriculum .curric-table td {
+  padding: clamp(10px, 1.6vw, 12px) clamp(12px, 2vw, 16px);
+  border-bottom: 1px solid #eee;
+  vertical-align: middle;
+  height: var(--row-h);
+}
+
+/* Zebra + hover */
+.admin-curriculum .curric-table tbody tr:nth-child(even) {
+  background: #f8fafc;
+}
+.admin-curriculum .curric-table tbody tr:hover {
+  background: #f1f5f9;
+  transition: background-color 0.2s ease;
+}
+
+/* Scrollbar styling */
+.admin-curriculum .table-scroll::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.admin-curriculum .table-scroll::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05);
+}
+.admin-curriculum .table-scroll::-webkit-scrollbar-thumb {
+  background: rgba(0, 71, 171, 0.3);
+  border-radius: 4px;
+}
+.admin-curriculum .table-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 71, 171, 0.5);
+}
+
+/* =========================================================================
+    FOOTER (non-sticky, always visible)
+    ========================================================================= */
+.admin-curriculum .table-footer-container {
+  display: flex;
+  justify-content: flex-end;
+  flex: 0 0 auto; /* always reserves space below card */
+}
+.admin-curriculum .table-footer {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: clamp(12px, 2vw, 24px);
+  padding: 0 8px;
+  margin-top: var(--footer-top-margin);
+  min-height: var(--footer-min-h);
+  flex-wrap: nowrap; /* keep label + button side-by-side */
+}
+.admin-curriculum .course-count-label {
+  min-width: 0;
+  flex: 1 1 auto;
+  text-align: right;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: clamp(12.5px, 1.5vw, 14px);
+  font-weight: 800;
+  color: #555;
+}
+.admin-curriculum .update-button {
+  flex: 0 0 auto;
+  background: var(--curric-gold);
+  color: var(--curric-blue);
+  padding: 8px 20px;
+  border-radius: 20px;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+.admin-curriculum .update-button:hover {
+  background: #ffcc00;
+}
+
+/* =========================================================================
+    ORIENTATION / SHORT-HEIGHT SAFEGUARDS (sub-desktop)
+    ========================================================================= */
+
+/* Landscape under desktop can be short → keep ~10 rows */
+@media (max-width: 1279px) and (orientation: landscape) {
+  :root {
+    --rows-visible: 10;
+  }
+}
+
+/* Very short heights (e.g., 1024×600) → keep ~10 rows */
+@media (max-width: 1279px) and (max-height: 700px) {
+  :root {
+    --rows-visible: 10;
+  }
+}
+
+/* =========================================================================
+    RANGE BREAKPOINTS — Mobile-first
+    ========================================================================= */
+
+/* ≥600 — large phones / small tablets */
+@media (min-width: 600px) {
+  :root {
+    --row-h: 42px;
+    --head-h: 42px;
+    --rows-visible: 10;
+  }
+}
+
+/* ≥768 — tablets (portrait) */
+@media (min-width: 768px) {
+  :root {
+    --row-h: 44px;
+    --head-h: 44px;
+    --rows-visible: 20;
+  }
+  .admin-curriculum .curric-table th,
+  .admin-curriculum .curric-table td {
+    padding: 8px 12px;
+  }
+}
+
+/* ≥912 — large portrait tablets */
+@media (min-width: 912px) {
+  :root {
+    --row-h: 44px;
+    --head-h: 44px;
+    --rows-visible: 20;
+  }
+  .admin-curriculum .filters-rail {
+    gap: 14px;
+  }
+}
+
+/* ≥1024 — tablet landscape / small laptops */
+@media (min-width: 1024px) {
+  :root {
+    --row-h: 44px;
+    --head-h: 44px;
+  } /* rows-visible remains 20 */
+  .admin-curriculum .curric-table th,
+  .admin-curriculum .curric-table td {
+    font-size: 13px;
+  }
+}
+
+/* =========================================================================
+    DESKTOPS (≥1280) — static page, NO row cap, X-scroll OFF
+    • Container is the only resizable surface; table follows (max-height: 100%)
+    ========================================================================= */
+@media (min-width: 1280px) {
+  .admin-curriculum {
+    overflow: hidden;
+  } /* page static */
+  .admin-curriculum .content-scrollable {
+    overflow: hidden;
+  }
+
+  /* Cap the container by viewport so footer always remains visible */
+  .admin-curriculum .curric-card {
+    max-height: calc(
+      100svh - var(--bottom-nav-h) - var(--footer-min-h) -
+        var(--content-bpad-extra) - var(--content-vpad)
+    );
+  }
+
+  .admin-curriculum .table-scroll {
+    overflow-x: hidden; /* no horizontal scroll on desktop */
+    max-height: 100%; /* table follows the container’s current size */
+  }
+
+  .admin-curriculum .curric-table {
+    min-width: 100%;
+  } /* fit container width */
+}
+
+/* ≥1440 — large desktops */
+@media (min-width: 1440px) {
+  .admin-curriculum .content-scrollable {
+    padding: clamp(20px, 2vw, 32px);
+  }
+}
+
+/* ≥1920 — very large displays */
+@media (min-width: 1920px) {
+  .admin-curriculum .curric-table {
+    font-size: 15px;
+  }
+}
+
+/* =========================================================================
+    HORIZONTAL-SCROLL HINT OVERLAY (already in your HTML)
+    ========================================================================= */
+.admin-curriculum .scroll-hint-overlay {
+  position: fixed;
+  inset: 0;
+  display: none; /* JS toggles via [data-open="1"] */
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  pointer-events: none;
+}
+.admin-curriculum .scroll-hint-overlay[data-open="1"] {
+  display: flex;
+}
+.admin-curriculum .scroll-hint {
+  background: rgba(12, 45, 82, 0.92);
+  color: #fff;
+  padding: 14px 18px;
+  border-radius: 10px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+  font-size: 15px;
+  line-height: 1.35;
+  text-align: center;
+  max-width: 86vw;
+}
+.admin-curriculum .scroll-hint b {
+  color: var(--curric-gold);
+}
+
+/* ===== Desktop: reduce table height so footer is always visible ===== */
+@media (min-width: 1280px) {
+  /* Keep the card flexible; the table owns the scroll on desktop */
+  .admin-curriculum .curric-card {
+    max-height: none;
+  }
+
+  /* Cap the table’s vertical size with a conservative budget */
+  .admin-curriculum .table-scroll {
+    /* Pick the smaller of a viewport slice (52vh) or a full budgeted calc */
+    max-height: min(
+      52vh,
+      calc(
+        100svh - var(--bottom-nav-h, 96px) - var(--footer-min-h, 56px) -
+          var(--content-bpad-extra, 4px) - var(--content-vpad, 24px) -
+          (var(--card-vpad, 12px) * 2) - var(--card-gap, 8px) -
+          var(--table-top-gap, 16px) - var(--table-bottom-gap, 2px) -
+          var(--header-estimate, 200px)
+      )
+    );
+    overflow-y: auto; /* vertical scroll lives here */
+    overflow-x: hidden; /* no horizontal scroll on desktop */
+  }
+
+  /* If you toggle a custom resize mode by adding .is-resized, let it grow */
+  .admin-curriculum .curric-card.is-resized .table-scroll {
+    max-height: calc(
+      100svh - var(--bottom-nav-h, 96px) - var(--footer-min-h, 56px) -
+        var(--content-bpad-extra, 4px) - var(--content-vpad, 24px) -
+        (var(--card-vpad, 12px) * 2) - var(--card-gap, 8px) -
+        var(--table-top-gap, 16px) - var(--table-bottom-gap, 2px) -
+        var(--header-estimate, 200px)
+    );
+  }
+}

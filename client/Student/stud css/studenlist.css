@@ -1,0 +1,593 @@
+/* ========================================================================
+   Student Enlistment — Sidebar-safe layout + Search overlay (2025-09-03)
+   + Grow-on-resize scroller (card + table stay in sync)
+   ======================================================================== */
+
+/* ---------- PAGE GUARDS (no horizontal widening) ---------- */
+.enlistment,
+.enlistment body,
+.enlistment .global-container {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden; /* clamp page width; do NOT set on <main> */
+}
+.enlistment main {
+  /* allow children to paint outside (e.g., search dropdown) */
+  width: 100%;
+  max-width: 100%;
+  overflow-x: visible;
+}
+
+/* Make sure no child forces its parent wider */
+.enlistment,
+.enlistment .global-container,
+.enlistment main,
+.enlistment .content-scrollable,
+.enlistment .tables-section,
+.enlistment .table-half,
+.enlistment .table-card,
+.enlistment .table-scroll,
+.enlistment header,
+.enlistment .steps-wrapper {
+  min-width: 0;
+}
+
+/* ---------- HEADER / SEARCH: float above content ---------- */
+.enlistment header {
+  position: relative;
+  z-index: 20;
+  overflow: visible;
+}
+.enlistment .header-search {
+  position: relative;
+  z-index: 30;
+  max-width: min(480px, 36vw);
+}
+.enlistment .header-search .search-dropdown {
+  position: absolute;
+  inset: auto 0 auto 0;
+  top: calc(100% + 6px);
+  background: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  max-height: 56vh;
+  overflow: auto;
+  z-index: 9999; /* always above */
+}
+
+/* ---------- STEPS BAR: never widens page ---------- */
+.enlistment .steps-wrapper {
+  max-width: 100%;
+  overflow: hidden;
+}
+.enlistment .steps-wrapper .steps-list {
+  gap: clamp(8px, 1.2vw, 16px);
+}
+
+/* ---------- PAGE SCAFFOLD ---------- */
+:root {
+  --enlist-blue: #0c2d52;
+  --enlist-gold: #ffd700;
+  --enlist-border-blue: #0047ab;
+
+  /* Tighter structure */
+  --card-radius: 16px;
+  --content-vpad: clamp(10px, 1.2vw, 16px);
+  --card-vpad: clamp(8px, 1vw, 12px);
+  --card-gap: 8px;
+
+  --table-top-gap: 8px;
+  --table-bottom-gap: 2px;
+  --content-bpad-extra: 4px;
+
+  /* Table */
+  --table-font: 13.5px;
+  --table-min-w: 600px; /* narrower baseline */
+
+  /* Cell padding (compact) */
+  --cell-x: clamp(6px, 0.8vw, 9px);
+  --cell-y: clamp(5px, 0.7vw, 8px);
+
+  /* Column targets (tight) */
+  --col-subject: 176px;
+  --col-units: 44px;
+  --col-day: 54px;
+  --col-time: 116px;
+  --col-section: 104px;
+  --col-remove: 38px;
+
+  --table-min-h: 120px;
+  --resize-handle: 12px;
+
+  --bottom-nav-h: 96px;
+  --header-estimate: 84px;
+
+  --row-h: 40px;
+  --head-h: 40px;
+  --rows-visible: 10;
+}
+
+.enlistment {
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto; /* page can grow when tables grow */
+}
+.enlistment .content-scrollable {
+  padding: var(--content-vpad);
+  padding-bottom: calc(
+    var(--content-bpad-extra) + var(--bottom-nav-h) +
+      env(safe-area-inset-bottom)
+  );
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow: visible; /* keep search / hints visible */
+}
+
+/* ---------- TWO-CARD LAYOUT (wrap when tight) ---------- */
+.enlistment .tables-section {
+  display: flex;
+  flex-direction: column; /* mobile-first stack */
+  gap: clamp(12px, 1vw, 18px);
+  min-height: 0;
+}
+.enlistment .table-half {
+  flex: 1 1 0;
+  min-width: 0;
+}
+@media (min-width: 1024px) {
+  .enlistment .tables-section {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+  .enlistment .table-half {
+    flex: 1 1 540px;
+  } /* prefers ~540px each, wraps if needed */
+}
+
+/* ---------- CARD ---------- */
+.enlistment .table-card {
+  position: relative;
+  background: #fff;
+  border: 2px solid var(--enlist-border-blue);
+  border-radius: var(--card-radius);
+  padding: var(--card-vpad);
+  display: flex;
+  flex-direction: column;
+  gap: var(--card-gap);
+
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden; /* child scroller owns overflow */
+
+  /* default cap so the first render is tidy */
+  min-height: calc(
+    var(--header-estimate) + var(--table-top-gap) + var(--table-min-h) +
+      var(--table-bottom-gap) + (var(--card-vpad) + var(--card-vpad))
+  );
+  max-height: calc(
+    70svh - var(--bottom-nav-h) - var(--content-bpad-extra) -
+      var(--content-vpad)
+  );
+}
+/* When the user resizes (JS adds .is-resized), let the card grow with the scroller */
+.enlistment .table-card.is-resized {
+  max-height: none;
+  height: auto;
+  overflow: hidden;
+}
+
+.enlistment .table-title {
+  font-size: clamp(17px, 1.6vw, 19px);
+  font-weight: 700;
+  color: var(--enlist-blue);
+  margin: 0;
+}
+
+/* Chips rail */
+.enlistment .filter-chips-container {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+.enlistment .filter-chips {
+  display: inline-flex;
+  gap: 8px;
+  padding-bottom: 4px;
+}
+.enlistment .chip-filter {
+  padding: 6px 12px;
+  border-radius: 9999px;
+  border: 2px solid var(--enlist-border-blue);
+  background: #fff;
+  color: var(--enlist-border-blue);
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s;
+  white-space: nowrap;
+}
+.enlistment .chip-filter:hover {
+  background: #eff6ff;
+}
+.enlistment .chip-filter.active {
+  background: var(--enlist-gold);
+  color: var(--enlist-blue);
+}
+
+/* ---------- SCROLLER (desktop too) ---------- */
+.enlistment .table-scroll {
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  overflow-x: auto;
+  overflow-y: auto; /* ALL x-overflow stays inside here */
+  flex: 1 1 auto;
+  min-height: var(--table-min-h);
+  max-width: 100%;
+  margin-top: var(--table-top-gap);
+  margin-bottom: var(--table-bottom-gap);
+  -webkit-overflow-scrolling: touch;
+  scrollbar-gutter: stable both-edges;
+  overscroll-behavior: contain;
+  touch-action: pan-x pan-y;
+
+  /* default height window (cap); sticky thead sits inside this */
+  max-height: min(
+    calc(var(--head-h) + var(--row-h) * var(--rows-visible)),
+    calc(
+      70svh - var(--bottom-nav-h) - var(--content-bpad-extra) -
+        var(--content-vpad) - (var(--card-vpad) + var(--card-vpad)) -
+        var(--card-gap) - var(--table-top-gap) - var(--header-estimate)
+    )
+  );
+
+  /* Enable native vertical resize; JS keeps card + scroller in sync */
+  resize: vertical;
+}
+/* When resized (class added by JS), allow full height inside the card */
+.enlistment .table-card.is-resized .table-scroll {
+  max-height: 100%;
+}
+
+/* ---------- TABLE (compact + fixed columns) ---------- */
+.enlistment .enlistment-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: fixed; /* prevents big gaps */
+  font-size: var(--table-font);
+  overflow-wrap: anywhere;
+  min-width: var(--table-min-w); /* will scroll inside .table-scroll */
+}
+.enlistment .enlistment-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: #0047ab;
+  color: var(--enlist-gold);
+}
+.enlistment .enlistment-table th {
+  padding: var(--cell-y) var(--cell-x);
+  text-align: left;
+  font-weight: 800;
+  white-space: nowrap;
+  height: var(--head-h);
+}
+.enlistment .enlistment-table td {
+  padding: var(--cell-y) var(--cell-x);
+  border-bottom: 1px solid #e5e7eb;
+  vertical-align: middle;
+  height: var(--row-h);
+}
+
+/* Tighter column widths */
+.enlistment .enlistment-table th:nth-child(1),
+.enlistment .enlistment-table td:nth-child(1) {
+  width: var(--col-subject);
+}
+.enlistment .enlistment-table th:nth-child(2),
+.enlistment .enlistment-table td:nth-child(2) {
+  width: var(--col-units);
+  text-align: center;
+}
+.enlistment .enlistment-table th:nth-child(3),
+.enlistment .enlistment-table td:nth-child(3) {
+  width: var(--col-day);
+  text-align: center;
+}
+.enlistment .enlistment-table th:nth-child(4),
+.enlistment .enlistment-table td:nth-child(4) {
+  width: var(--col-time);
+  text-align: center;
+}
+.enlistment .enlistment-table th:nth-child(5),
+.enlistment .enlistment-table td:nth-child(5) {
+  width: var(--col-section);
+  text-align: center;
+}
+.enlistment .enlistment-table th:nth-child(6),
+.enlistment .enlistment-table td:nth-child(6) {
+  width: var(--col-remove);
+  text-align: center;
+}
+
+/* Allow subject to wrap to avoid pushing width */
+.enlistment .enlistment-table td:nth-child(1) {
+  white-space: normal;
+}
+
+/* Zebra + hover */
+.enlistment .enlistment-table tbody tr:nth-child(even) {
+  background: #f8fafc;
+}
+.enlistment .enlistment-table tbody tr:hover {
+  background: #f1f5f9;
+  transition: background-color 0.2s ease;
+}
+
+/* Remove button */
+.enlistment .remove-btn {
+  color: #ef4444;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  padding: 2px;
+  transition: color 0.2s;
+}
+.enlistment .remove-btn:hover {
+  color: #dc2626;
+}
+.enlistment .remove-btn:focus {
+  outline: none;
+}
+
+/* Scrollbars */
+.enlistment .table-scroll::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.enlistment .table-scroll::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05);
+}
+.enlistment .table-scroll::-webkit-scrollbar-thumb {
+  background: rgba(0, 71, 171, 0.3);
+  border-radius: 4px;
+}
+.enlistment .table-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 71, 171, 0.5);
+}
+
+/* Resize handle */
+.enlistment .enlist-resize-handle {
+  position: relative;
+  height: 14px;
+  margin-top: 6px;
+  cursor: ns-resize;
+  touch-action: none;
+  user-select: none;
+  border-radius: 8px;
+  background: radial-gradient(
+        circle at 50% 6px,
+        rgba(0, 0, 0, 0.18) 0 2px,
+        transparent 2px
+      )
+      8px 0/16px 8px repeat-x,
+    radial-gradient(
+        circle at 50% 10px,
+        rgba(0, 0, 0, 0.12) 0 1px,
+        transparent 1px
+      )
+      16px 0/16px 8px repeat-x;
+}
+
+/* Breakpoints (unchanged heights) */
+@media (min-width: 600px) {
+  :root {
+    --row-h: 42px;
+    --head-h: 42px;
+    --rows-visible: 10;
+  }
+}
+@media (min-width: 768px) {
+  :root {
+    --row-h: 44px;
+    --head-h: 44px;
+    --rows-visible: 20;
+  }
+}
+@media (min-width: 912px) {
+  :root {
+    --row-h: 44px;
+    --head-h: 44px;
+    --rows-visible: 20;
+  }
+}
+@media (min-width: 1024px) {
+  :root {
+    --row-h: 44px;
+    --head-h: 44px;
+  }
+}
+
+/* Scroll-hint overlay */
+.enlistment .scroll-hint-overlay {
+  position: fixed;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  pointer-events: none;
+}
+.enlistment .scroll-hint-overlay[data-open="1"] {
+  display: flex;
+}
+.enlistment .scroll-hint {
+  background: rgba(12, 45, 82, 0.92);
+  color: #fff;
+  padding: 14px 18px;
+  border-radius: 10px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+  font-size: 15px;
+  line-height: 1.35;
+  text-align: center;
+  max-width: 86vw;
+}
+.enlistment .scroll-hint b {
+  color: var(--enlist-gold);
+}
+
+/* ===================== ENLISTMENT-ONLY LAYOUT OVERRIDE ===================== */
+/* Fix the sidebar width so it never gets pushed; keep bottomNav aligned to it */
+
+:root {
+  /* pick a width that fits “Welcome Student!” on one row */
+  --sidebar-w: 260px;
+  --sidebar-collapsed-w: 72px; /* matches your collapsed menu */
+}
+
+/* 1) Sidebar: lock width for this module */
+.enlistment .global-container {
+  display: flex;
+}
+.enlistment .sidebar {
+  flex: 0 0 var(--sidebar-w);
+  width: var(--sidebar-w);
+  min-width: var(--sidebar-w);
+}
+.enlistment .sidebar.collapsed {
+  flex: 0 0 var(--sidebar-collapsed-w);
+  width: var(--sidebar-collapsed-w);
+  min-width: var(--sidebar-collapsed-w);
+}
+
+/* Keep “Welcome Student!” on one line inside the sidebar */
+.enlistment .sidebar .sidebar-user .user-text {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 2) Main: allow it to shrink instead of widening the page */
+.enlistment main {
+  flex: 1 1 auto;
+  min-width: 0; /* critical: prevents horizontal push */
+  overflow-x: visible; /* keep search dropdown visible */
+}
+
+/* 3) Page clamp: nothing can widen the layout */
+.enlistment,
+.enlistment .global-container {
+  max-width: 100%;
+  overflow-x: hidden; /* clamp at viewport edge; sidebar won’t move */
+}
+
+/* 4) Bottom nav: start exactly at the sidebar edge */
+.enlistment #bottomNav {
+  position: fixed;
+  bottom: 0;
+  left: var(--sidebar-w); /* sits flush to the sidebar */
+  right: 0;
+  width: auto;
+  z-index: 50; /* above content */
+}
+
+/* When the sidebar is collapsed, shift the bottom nav accordingly */
+.enlistment .sidebar.collapsed ~ #bottomNav {
+  left: var(--sidebar-collapsed-w);
+}
+
+/* Mobile/drawer: nav spans the full width */
+@media (max-width: 768px) {
+  .enlistment #bottomNav {
+    left: 0;
+    right: 0;
+  }
+}
+
+/* 5) Ensure header search always overlays content (not required if already added) */
+.enlistment header {
+  position: relative;
+  z-index: 40;
+}
+.enlistment .header-search {
+  position: relative;
+  z-index: 45;
+}
+.enlistment .header-search .search-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 9999;
+}
+
+/* 6) (Keeps tables compact and inside their own scrollers; no page push) */
+.enlistment .table-scroll {
+  overflow-x: auto;
+}
+.enlistment .enlistment-table {
+  table-layout: fixed;
+  min-width: 600px;
+}
+.enlistment .enlistment-table th,
+.enlistment .enlistment-table td {
+  padding: clamp(5px, 0.7vw, 8px) clamp(6px, 0.8vw, 9px);
+}
+.enlistment .enlistment-table th:nth-child(1),
+.enlistment .enlistment-table td:nth-child(1) {
+  width: 176px;
+}
+.enlistment .enlistment-table th:nth-child(2),
+.enlistment .enlistment-table td:nth-child(2) {
+  width: 44px;
+  text-align: center;
+}
+.enlistment .enlistment-table th:nth-child(3),
+.enlistment .enlistment-table td:nth-child(3) {
+  width: 54px;
+  text-align: center;
+}
+.enlistment .enlistment-table th:nth-child(4),
+.enlistment .enlistment-table td:nth-child(4) {
+  width: 116px;
+  text-align: center;
+}
+.enlistment .enlistment-table th:nth-child(5),
+.enlistment .enlistment-table td:nth-child(5) {
+  width: 104px;
+  text-align: center;
+}
+.enlistment .enlistment-table th:nth-child(6),
+.enlistment .enlistment-table td:nth-child(6) {
+  width: 38px;
+  text-align: center;
+}
+
+/* === Your Schedule: Remove button column (override) === */
+.enlistment #yourCard .enlistment-table .remove-col {
+  width: 44px;
+}
+.enlistment #yourCard .enlistment-table .remove-center {
+  text-align: center;
+}
+.enlistment .remove-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #ef4444;
+  cursor: pointer;
+}
+.enlistment .remove-btn:hover {
+  color: #dc2626;
+}
+.enlistment .remove-btn i {
+  pointer-events: none;
+}

@@ -1,0 +1,327 @@
+/* ================================
+   Student Login — Page-Only Styles
+   Matches Register field style (.input-icon)
+   ================================ */
+
+/* ---------- Theme Tokens ---------- */
+:root {
+  --blue: #0047ab;
+  --blue-600: #003a8d;
+  --yellow: #ffd700;
+  --ink-900: #111827;
+  --ink-800: #1f2937;
+  --ink-700: #374151;
+  --ink-600: #4b5563;
+  --ink-500: #6b7280;
+  --ink-400: #9ca3af;
+  --line-300: #d1d5db;
+  --card-bg: rgba(255, 255, 255, 0.92);
+}
+
+/* ---------- Base Reset ---------- */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  height: 100%;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial,
+    "Apple Color Emoji", "Segoe UI Emoji";
+  color: var(--ink-800);
+  overflow: hidden;
+  background: var(--yellow);
+}
+
+/* Accessibility utility */
+.sr-only {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ---------- Background (same as Register) ---------- */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  background: radial-gradient(
+      1200px 800px at 25% 30%,
+      rgba(255, 215, 0, 0.75),
+      transparent 65%
+    ),
+    radial-gradient(
+      900px 700px at 80% 70%,
+      rgba(255, 215, 0, 0.55),
+      transparent 65%
+    ),
+    linear-gradient(135deg, #ffd700 0%, #fbbf24 40%, #0047ab 80%, #003a8d 100%);
+  background-blend-mode: screen, screen, normal;
+  pointer-events: none;
+}
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  background-image: repeating-linear-gradient(
+    0deg,
+    rgba(255, 255, 255, 0.02) 0 2px,
+    transparent 2px 4px
+  );
+  mix-blend-mode: soft-light;
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+/* ---------- Layout (match Register) ---------- */
+.center-wrapper {
+  position: relative;
+  z-index: 1;
+  min-height: 100svh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-block: 24px;
+  padding-inline: clamp(12px, 4vw, 24px);
+  padding-bottom: calc(24px + env(safe-area-inset-bottom));
+}
+
+.form-container {
+  width: min(100%, 520px);
+  margin-inline: auto;
+  background: var(--card-bg);
+  backdrop-filter: blur(6px);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25), 0 2px 8px rgba(0, 0, 0, 0.12);
+  padding: 28px 24px 22px;
+  text-align: center;
+
+  max-height: calc(100svh - 48px);
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+/* ---------- Branding ---------- */
+.logo {
+  width: 82px;
+  height: auto;
+  display: block;
+  margin: 0 auto 12px;
+}
+
+/* ---------- Headings ---------- */
+.title {
+  font-size: clamp(1.35rem, 1.1rem + 0.8vw, 1.75rem);
+  font-weight: 700;
+  color: var(--ink-900);
+  margin-bottom: 6px;
+  letter-spacing: 0.2px;
+}
+.subtitle {
+  font-size: 0.95rem;
+  color: var(--ink-600);
+  margin-bottom: 18px;
+}
+
+/* ---------- Form Elements (same as Register) ---------- */
+form {
+  display: grid;
+  gap: 14px;
+  margin-top: 4px;
+  margin-bottom: 8px;
+}
+
+.input-icon {
+  position: relative;
+}
+.input-icon i {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--blue);
+  opacity: 0.9;
+  font-size: 0.95rem;
+}
+.input-icon input {
+  width: 100%;
+  height: 44px;
+  padding: 0 12px 0 38px;
+  border-radius: 10px;
+  border: 1px solid var(--line-300);
+  background: #fff;
+  color: var(--ink-900);
+  outline: none;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+.input-icon input::placeholder {
+  color: var(--ink-400);
+}
+.input-icon input:focus {
+  border-color: var(--yellow);
+  box-shadow: 0 0 0 3px rgba(255, 215, 0, 0.25);
+}
+
+/* Remember / link row */
+.row-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 2px 0 6px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.92rem;
+  color: var(--ink-700);
+}
+.checkbox input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--yellow);
+}
+
+/* ---------- Primary Button ---------- */
+.btn-primary {
+  display: inline-block;
+  width: 100%;
+  height: 46px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--blue);
+  color: #fff;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  cursor: pointer;
+  transition: transform 120ms ease, background-color 160ms ease,
+    box-shadow 160ms ease;
+  box-shadow: 0 8px 18px rgba(0, 71, 171, 0.28);
+}
+.btn-primary:hover {
+  background: var(--blue-600);
+  transform: translateY(-1px);
+}
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+/* ---------- Footer ---------- */
+.muted {
+  margin-top: 14px;
+  font-size: 0.95rem;
+  color: var(--ink-700);
+}
+.link {
+  color: var(--blue);
+  text-decoration: none;
+  font-weight: 600;
+}
+.link:hover {
+  text-decoration: underline;
+}
+
+/* ---------- Focus Visibility ---------- */
+:focus-visible {
+  outline: 3px solid rgba(255, 215, 0, 0.4);
+  outline-offset: 2px;
+  border-radius: 10px;
+}
+
+/* ---------- Responsiveness (same breakpoints as Register) ---------- */
+@media (max-width: 912px) {
+  .center-wrapper {
+    padding-block: 20px;
+  }
+  .form-container {
+    width: min(100%, 520px);
+    padding: 24px 20px 18px;
+  }
+}
+@media (max-width: 768px) {
+  .title {
+    font-size: clamp(1.25rem, 1rem + 1.2vw, 1.6rem);
+  }
+  .subtitle {
+    font-size: 0.93rem;
+  }
+  .input-icon input {
+    height: 42px;
+  }
+  .btn-primary {
+    height: 44px;
+  }
+}
+@media (max-width: 600px) {
+  .center-wrapper {
+    padding-inline: clamp(12px, 5vw, 18px);
+  }
+  .form-container {
+    border-radius: 14px;
+  }
+  .logo {
+    width: 76px;
+    margin-bottom: 10px;
+  }
+}
+@media (max-width: 400px) {
+  .form-container {
+    padding: 20px 16px 16px;
+  }
+  .logo {
+    width: 72px;
+  }
+  .input-icon i {
+    left: 10px;
+  }
+  .input-icon input {
+    padding-left: 36px;
+    font-size: 0.95rem;
+  }
+}
+@media (max-width: 360px) {
+  .input-icon input {
+    height: 40px;
+  }
+  .btn-primary {
+    height: 42px;
+  }
+  .title {
+    font-size: clamp(1.15rem, 1rem + 1vw, 1.35rem);
+  }
+}
+@media (min-width: 1024px) {
+  .center-wrapper {
+    padding-inline: 32px;
+  }
+}
+@media (min-width: 1280px) {
+  .form-container {
+    width: min(100%, 540px);
+  }
+}
+@media (min-width: 1440px) {
+  .form-container {
+    width: min(100%, 560px);
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .btn-primary {
+    transition: background-color 160ms ease, box-shadow 160ms ease;
+  }
+}

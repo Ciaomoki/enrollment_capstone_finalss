@@ -1,0 +1,544 @@
+/* =========================================================================
+   Evaluators — Consistent, Bottom-Nav-safe
+   • LEFT: 2 visible rows (cards), overflow scroll
+   • RIGHT: bottom-aligned to LEFT visible height; list shows 4 rows, overflow
+   • Desktop page never scrolls; only the two inner panes do
+   • Long text never pushes layout: clamp/ellipsis + anchored pills
+   ======================================================================== */
+
+:root {
+  /* Brand */
+  --eval-blue: #0c2d52;
+  --eval-blue-light: #0b4d8f;
+  --eval-gold: #ffd700;
+
+  /* Layout budgets */
+  --content-pad: clamp(16px, 2vw, 24px);
+  --bottom-nav-h: 96px;
+
+  /* Rail width */
+  --rail-w: clamp(320px, 28vw, 420px);
+
+  /* Cards grid sizing (desktop) */
+  --card-gap: 16px;
+  --eval-card-h: 256px; /* single card row height (kept uniform/original look) */
+  --visible-left-h: calc(
+    var(--eval-card-h) * 2 + var(--card-gap) * 1
+  ); /* 2 rows + 1 gap */
+
+  /* Requests list sizing */
+  --req-gap: 12px;
+  --req-row-h: 112px; /* one request row height (buttons + meta) */
+  --panel-chrome-h: 56px; /* panel title + padding budget */
+
+  /* Shadows / radius */
+  --card-radius: 16px;
+  --shadow-soft: 0 1px 2px rgba(0, 0, 0, 0.06);
+  --shadow-hover: 0 6px 16px rgba(0, 0, 0, 0.18);
+}
+
+/* Keep space for Bottom Nav; prevent page scroll on desktop */
+.admin-evaluators main {
+  padding-bottom: var(--bottom-nav-h);
+}
+@media (min-width: 992px) {
+  .admin-evaluators {
+    overflow-y: hidden;
+  } /* page itself doesn't scroll */
+}
+
+/* Page shell */
+.admin-evaluators .content-scrollable {
+  padding: var(--content-pad);
+  padding-bottom: calc(var(--bottom-nav-h) + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Two independent containers */
+.admin-evaluators .page-grid {
+  display: grid;
+  grid-template-columns: 1fr var(--rail-w);
+  gap: clamp(16px, 2vw, 24px);
+  align-items: stretch;
+  min-height: 0;
+}
+
+/* ===================== LEFT (Active Evaluators) ===================== */
+
+.admin-evaluators .eval-left {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+.admin-evaluators .eval-left-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  /* natural height = header + 2 visible rows */
+  min-height: 0;
+}
+
+.admin-evaluators .evals-head h3 {
+  margin: 0 0 10px;
+  font-size: clamp(18px, 1.8vw, 20px);
+  color: var(--eval-blue);
+  font-weight: 700;
+}
+.admin-evaluators .filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.admin-evaluators .filter {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.admin-evaluators .filter label {
+  font-size: 12px;
+  color: #5b7089;
+  margin-bottom: 4px;
+}
+.admin-evaluators .filter select {
+  width: min(180px, 100%);
+  padding: 8px 12px;
+  border: 1px solid #d6dae1;
+  border-radius: 8px;
+  background: #fff;
+}
+
+/* The ONLY left-side scroller (capped to exactly 2 rows on desktop) */
+.admin-evaluators .cards-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  padding-right: 6px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-gutter: stable both-edges;
+}
+@media (min-width: 992px) {
+  .admin-evaluators .cards-scroll {
+    max-height: var(--visible-left-h);
+  }
+}
+
+.admin-evaluators .cards-grid {
+  display: grid;
+  gap: var(--card-gap);
+  align-items: stretch;
+  min-width: 0;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+@media (max-width: 1024px) {
+  .admin-evaluators .cards-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 768px) {
+  .admin-evaluators .cards-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+}
+
+/* Card (grid inside so status stays anchored) */
+.admin-evaluators .eval-card {
+  background: var(--eval-blue-light);
+  color: #fff;
+  border: 4px solid var(--eval-gold);
+  border-radius: 14px;
+  padding: clamp(12px, 1.8vw, 14px);
+  box-shadow: var(--shadow-soft);
+  transition: box-shadow 0.2s, transform 0.2s;
+  min-width: 0;
+
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-rows: auto auto 1fr auto;
+  grid-template-areas:
+    "avatar"
+    "name"
+    "meta"
+    "status";
+  row-gap: 8px;
+  text-align: center;
+}
+@media (min-width: 992px) {
+  /* Fill the auto-rows so every card row is exactly the same height */
+  .admin-evaluators .cards-grid {
+    grid-auto-rows: var(--eval-card-h);
+  }
+  .admin-evaluators .eval-card {
+    height: 100%;
+  }
+}
+.admin-evaluators .eval-card:hover {
+  box-shadow: var(--shadow-hover);
+  transform: translateY(-2px);
+}
+
+.admin-evaluators .eval-card .avatar {
+  grid-area: avatar;
+  width: 68px;
+  height: 68px;
+  margin: 2px auto 4px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.08);
+}
+.admin-evaluators .eval-card .avatar i {
+  font-size: clamp(40px, 4.8vw, 48px);
+  line-height: 1;
+}
+
+.admin-evaluators .eval-card .eval-name {
+  grid-area: name;
+  margin: 0;
+  font-weight: 800;
+  font-size: clamp(16px, 1.9vw, 18px);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Meta: NEVER push layout on desktop—single line with ellipsis.
+   On tablet/phone allow up to 2 lines for readability. */
+.admin-evaluators .eval-card .eval-meta {
+  grid-area: meta;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  line-height: 1.35;
+}
+.admin-evaluators .eval-card .eval-meta li {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: clamp(12.5px, 1.6vw, 13.5px);
+  opacity: 0.95;
+}
+@media (max-width: 1024px) {
+  .admin-evaluators .eval-card .eval-meta li {
+    white-space: normal;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+}
+
+.admin-evaluators .status-pill {
+  grid-area: status;
+  justify-self: center;
+  align-self: end;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: #fff;
+  color: var(--eval-blue);
+  font-weight: 700;
+  font-size: clamp(12px, 1.5vw, 13px);
+}
+.admin-evaluators .status-pill .dot {
+  width: 9px;
+  height: 9px;
+  background: #22c55e;
+  border-radius: 50%;
+}
+
+/* Tablet reflow: avatar left, text right (still clamped) */
+@media (max-width: 1024px) {
+  .admin-evaluators .eval-card {
+    text-align: left;
+    grid-template-columns: 64px 1fr;
+    grid-template-rows: auto auto auto;
+    grid-template-areas:
+      "avatar name"
+      "avatar meta"
+      "avatar status";
+    column-gap: 12px;
+  }
+  .admin-evaluators .eval-card .avatar {
+    margin: 0;
+    width: 56px;
+    height: 56px;
+  }
+  .admin-evaluators .status-pill {
+    justify-self: start;
+  }
+}
+
+/* ===================== RIGHT (Requests Panel) ===================== */
+
+/* The rail itself takes the same visible height as the left grid (desktop).
+   That keeps bottoms aligned without JS. */
+.admin-evaluators .eval-right {
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+  align-self: end;
+}
+@media (min-width: 992px) {
+  .admin-evaluators .eval-right {
+    height: var(--visible-left-h);
+  }
+}
+
+.admin-evaluators .requests-panel {
+  width: 100%;
+  height: 100%;
+  background: var(--eval-blue);
+  color: #fff;
+  border-radius: var(--card-radius);
+  padding: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+.admin-evaluators .requests-panel > h3 {
+  margin: 0 0 12px;
+  color: #fff;
+  font-size: clamp(18px, 1.8vw, 20px);
+}
+
+/* The ONLY scroller on the right.
+   Height is the lesser of (panel height minus chrome) and 4 rows. */
+.admin-evaluators .requests-list {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  padding-right: 6px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-gutter: stable both-edges;
+  display: grid;
+  gap: var(--req-gap);
+  box-sizing: border-box;
+}
+@media (min-width: 992px) {
+  .admin-evaluators .requests-list {
+    grid-auto-rows: var(--req-row-h);
+    max-height: min(
+      calc(var(--req-row-h) * 4 + var(--req-gap) * 3),
+      calc(100% - var(--panel-chrome-h))
+    );
+  }
+}
+
+/* Request item: tight, uniform, clamped text */
+.admin-evaluators .request-item {
+  background: var(--eval-gold);
+  color: var(--eval-blue);
+  border-radius: 12px;
+  padding: 12px 14px;
+  box-shadow: var(--shadow-soft);
+  transition: box-shadow 0.2s;
+  box-sizing: border-box;
+  height: 100%;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  row-gap: 8px;
+}
+.admin-evaluators .request-item:hover {
+  box-shadow: var(--shadow-hover);
+}
+
+.admin-evaluators .req-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.admin-evaluators .req-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #fff;
+  border: 3px solid rgba(12, 45, 82, 0.2);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+.admin-evaluators .req-avatar i {
+  font-size: 22px;
+  color: var(--eval-blue);
+}
+.admin-evaluators .req-meta {
+  min-width: 0;
+}
+.admin-evaluators .req-name {
+  font-weight: 800;
+  line-height: 1.05;
+  font-size: clamp(13.5px, 1.9vw, 15px);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.admin-evaluators .req-id {
+  font-size: clamp(11.5px, 1.5vw, 12.5px);
+  opacity: 0.9;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.admin-evaluators .req-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-start;
+}
+.admin-evaluators .btn-pill {
+  width: auto;
+  min-width: 136px;
+  max-width: 100%;
+  padding: 10px 14px;
+  border-radius: 999px;
+  border: none;
+  cursor: pointer;
+  font-size: clamp(12.5px, 1.6vw, 13.5px);
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: transform 0.12s, box-shadow 0.12s, background 0.2s;
+  box-shadow: var(--shadow-soft);
+}
+.admin-evaluators .btn-pill i {
+  font-size: 14px;
+}
+.admin-evaluators .btn-pill.approve {
+  background: #22c55e;
+  color: #fff;
+}
+.admin-evaluators .btn-pill.approve:hover {
+  background: #17a34a;
+}
+.admin-evaluators .btn-pill.decline {
+  background: #ef4444;
+  color: #fff;
+}
+.admin-evaluators .btn-pill.decline:hover {
+  background: #dc2626;
+}
+
+/* Rail width tweaks / stacking */
+@media (max-width: 1280px) {
+  :root {
+    --rail-w: clamp(300px, 30vw, 380px);
+  }
+}
+@media (max-width: 1024px) {
+  :root {
+    --rail-w: clamp(280px, 30vw, 340px);
+  }
+}
+@media (max-width: 992px) {
+  .admin-evaluators .page-grid {
+    grid-template-columns: 1fr;
+  }
+  .admin-evaluators .eval-right {
+    height: auto;
+    align-self: stretch;
+  }
+  .admin-evaluators .requests-list {
+    max-height: none;
+  }
+}
+
+/* ---------- Card meta text: containment-first ---------- */
+
+/* Desktop: never let text push the card height — 1 line + ellipsis */
+@media (min-width: 992px) {
+  .admin-evaluators .eval-card .eval-meta li {
+    max-inline-size: 100%;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+
+    /* Neutralize any global wrapping/hyphenation that might force breaks */
+    word-break: normal !important;
+    overflow-wrap: normal !important;
+    hyphens: none !important;
+  }
+}
+
+/* Tablet/Phone: readable but capped — 2 lines, even for long tokens */
+@media (max-width: 991.98px) {
+  .admin-evaluators .eval-card .eval-meta li {
+    max-inline-size: 100%;
+    white-space: normal !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+
+    /* Multiline clamp */
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+
+    /* Allow breaking long emails/IDs within the 2-line cap */
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    hyphens: auto;
+  }
+}
+
+/* ===== 992–1120px (iPad Pro-ish): tablet grid + rail buttons stay on one row ===== */
+@media (min-width: 992px) and (max-width: 1120px) {
+  /* Left grid: 2-up so cards breathe */
+  .admin-evaluators .cards-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  /* Rail width + card/row sizing for this band */
+  :root {
+    --rail-w: clamp(280px, 28vw, 340px);
+    --eval-card-h: 264px; /* uniform card height */
+    --req-row-h: 120px; /* 4-row cap remains clean */
+  }
+
+  /* Long tokens readable but contained (no push) */
+  .admin-evaluators .eval-card .eval-meta li {
+    white-space: normal !important;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    hyphens: auto;
+  }
+
+  /* Keep Approve/Decline on a single line inside the narrow rail */
+  .admin-evaluators .req-actions {
+    flex-wrap: nowrap !important;
+    justify-content: space-between;
+    gap: 6px;
+  }
+  .admin-evaluators .btn-pill {
+    min-width: 96px; /* tighter so two pills fit */
+    padding: 8px 10px;
+    font-size: 12px;
+  }
+  .admin-evaluators .btn-pill i {
+    font-size: 12px;
+  }
+
+  /* Tiny padding trim for extra breathing room */
+  .admin-evaluators .request-item {
+    padding: 10px 12px;
+  }
+}

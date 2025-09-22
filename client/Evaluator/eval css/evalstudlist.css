@@ -1,0 +1,502 @@
+/* ========================================================================
+   Evaluator Student List — Canonical Responsive Standard (2025-09-03)
+   Mirrors Admin Curriculum:
+   • .content-scrollable page area
+   • Single container card with the ONLY scroller .table-scroll
+   • Sticky thead; --table-min-w forces X-scroll on sub-desktop
+   • One custom resize handle (.curric-resize-handle / .list-resize-handle)
+   • Viewport-centered X-scroll hint overlay; footer outside the card
+   ======================================================================== */
+
+:root {
+  /* Brand / palette parity */
+  --curric-blue: #0c2d52;
+  --curric-gold: #ffd700;
+  --curric-border-blue: #0047ab;
+
+  /* Frame / structural paddings */
+  --card-radius: 16px;
+  --content-vpad: clamp(12px, 2vw, 24px);
+  --card-vpad: clamp(10px, 1.6vw, 12px);
+  --card-gap: 8px;
+
+  /* Spacing knobs */
+  --table-top-gap: 16px;
+  --table-bottom-gap: 2px;
+  --footer-top-margin: 4px;
+  --content-bpad-extra: 4px;
+
+  /* Table */
+  --table-font: 14px;
+  --table-min-w: 1120px; /* force horizontal overflow on sub-desktop */
+
+  /* Manual-resize (container only) */
+  --table-min-h: 120px;
+
+  /* Layout budgets */
+  --bottom-nav-h: 96px;
+  --footer-min-h: 44px;
+  --header-estimate: 180px;
+
+  /* Row sizing & caps */
+  --row-h: 40px;
+  --head-h: 40px;
+  --rows-visible: 10; /* phones default */
+}
+
+/* =========================================================================
+   PAGE SCAFFOLD
+   ========================================================================= */
+.evaluator-student-list {
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+
+  overflow-x: hidden; /* never allow page-level X scroll */
+  overflow-y: auto; /* sub-desktop may scroll */
+}
+
+.evaluator-student-list .content-scrollable {
+  padding: var(--content-vpad);
+  padding-bottom: calc(
+    var(--content-bpad-extra) + var(--bottom-nav-h) +
+      env(safe-area-inset-bottom)
+  );
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden; /* isolate X to table-scroll */
+  overflow-y: visible;
+}
+
+/* =========================================================================
+   CARD (blue frame) — the only resizable surface (custom handle)
+   Support BOTH original .list-card and canonical .studlist-card
+   ========================================================================= */
+.evaluator-student-list .list-card,
+.evaluator-student-list .studlist-card {
+  position: relative;
+  background: #fff;
+  border: 2px solid var(--curric-border-blue);
+  border-radius: var(--card-radius);
+  padding: var(--card-vpad);
+  display: flex;
+  flex-direction: column;
+  gap: var(--card-gap);
+
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+
+  /* Safe minimum = header + gaps + minimum table + paddings */
+  min-height: calc(
+    var(--header-estimate) + var(--table-top-gap) + var(--table-min-h) +
+      var(--table-bottom-gap) + (var(--card-vpad) + var(--card-vpad))
+  );
+
+  /* cap so footer stays visible */
+  max-height: calc(
+    100svh - var(--bottom-nav-h) - var(--footer-min-h) -
+      var(--content-bpad-extra) - var(--content-vpad)
+  );
+}
+
+/* Resize handle (JS binds drag/keyboard)
+   Support BOTH names: .curric-resize-handle and .list-resize-handle */
+.evaluator-student-list .curric-resize-handle,
+.evaluator-student-list .list-resize-handle {
+  position: relative;
+  height: 14px;
+  margin-top: 6px;
+  cursor: ns-resize;
+  touch-action: none;
+  user-select: none;
+  border-radius: 8px;
+  background: radial-gradient(
+        circle at 50% 6px,
+        rgba(0, 0, 0, 0.18) 0 2px,
+        transparent 2px
+      )
+      8px 0/16px 8px repeat-x,
+    radial-gradient(
+        circle at 50% 10px,
+        rgba(0, 0, 0, 0.12) 0 1px,
+        transparent 1px
+      )
+      16px 0/16px 8px repeat-x;
+}
+
+/* Header (title + filters) — support original & canonical class names */
+.evaluator-student-list .list-card-header,
+.evaluator-student-list .studlist-card-header {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 0 0 auto;
+}
+.evaluator-student-list .list-card-title,
+.evaluator-student-list .studlist-title {
+  font-size: clamp(18px, 1.9vw, 20px);
+  font-weight: 700;
+  color: var(--curric-blue);
+  margin: 0;
+  text-align: center;
+}
+
+/* =========================================================================
+   FILTERS RAIL — horizontally scrollable chips (keep original visuals)
+   ========================================================================= */
+.evaluator-student-list .filters-rail {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: max-content;
+  gap: 16px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x pinch-zoom;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+  padding: 2px 10px 6px;
+  justify-content: center; /* keep original centered feel */
+  scroll-snap-type: x proximity;
+}
+.evaluator-student-list .filters-rail::-webkit-scrollbar {
+  height: 6px;
+}
+.evaluator-student-list .filters-rail::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 999px;
+}
+.evaluator-student-list .filter-group {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  white-space: nowrap;
+  scroll-snap-align: start;
+}
+.evaluator-student-list .filter-group label {
+  font-size: clamp(12px, 1.3vw, 14px);
+  color: #555;
+  font-weight: 600;
+}
+.evaluator-student-list .filter-group select {
+  width: clamp(140px, 18vw, 180px);
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  background: #fff;
+  font-size: clamp(12.5px, 1.5vw, 14px);
+  line-height: 1.2;
+}
+
+/* =========================================================================
+   THE ONLY SCROLLER — inside the card (Y + X as needed)
+   ========================================================================= */
+.evaluator-student-list .table-scroll {
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+
+  overflow-y: auto;
+  overflow-x: auto;
+
+  flex: 1 1 auto;
+  min-height: var(--table-min-h);
+  max-width: 100%;
+  margin-top: var(--table-top-gap);
+  margin-bottom: var(--table-bottom-gap);
+
+  -webkit-overflow-scrolling: touch;
+  scrollbar-gutter: stable both-edges;
+  overscroll-behavior: contain;
+  touch-action: pan-x pan-y;
+
+  /* default caps for mobile/tablet (≈10/20 rows) */
+  max-height: min(
+    calc(var(--head-h) + var(--row-h) * var(--rows-visible)),
+    calc(
+      100svh - var(--bottom-nav-h) - var(--footer-min-h) -
+        var(--content-bpad-extra) - var(--content-vpad) -
+        (var(--card-vpad) + var(--card-vpad)) - var(--card-gap) -
+        var(--table-top-gap) - var(--header-estimate)
+    )
+  );
+
+  resize: none; /* no native resize here */
+}
+
+/* When resized, let table fill container height */
+.evaluator-student-list .list-card.is-resized .table-scroll,
+.evaluator-student-list .studlist-card.is-resized .table-scroll {
+  max-height: 100%;
+}
+
+/* =========================================================================
+   TABLE VISUALS + sticky header  (preserve original design)
+   ========================================================================= */
+.evaluator-student-list {
+  /* Tuning knobs (visual only; structure untouched) */
+  --studlist-font: 14px; /* body cell font size (desktop) */
+  --studlist-head-font: 14px; /* header font size (desktop) */
+  --studlist-padY: 12px; /* vertical padding */
+  --studlist-padX: 16px; /* horizontal padding */
+}
+
+.evaluator-student-list .student-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: auto; /* original behavior */
+  font-size: var(--studlist-font);
+
+  /* Force X-scroll on narrow widths without changing columns */
+  min-width: var(--table-min-w);
+}
+
+.evaluator-student-list .student-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--curric-blue);
+  color: var(--curric-gold);
+}
+
+.evaluator-student-list .student-table th {
+  padding: var(--studlist-padY) var(--studlist-padX);
+  text-align: left;
+  font-weight: 800;
+  font-size: var(--studlist-head-font);
+  border: none;
+  white-space: nowrap; /* keep headers compact; cells can wrap */
+  height: var(--head-h);
+}
+
+.evaluator-student-list .student-table td {
+  padding: var(--studlist-padY) var(--studlist-padX);
+  border-bottom: 1px solid #eee;
+  vertical-align: middle;
+  height: var(--row-h);
+}
+
+.evaluator-student-list .student-table tbody tr:nth-child(even) {
+  background: #f8fafc;
+}
+.evaluator-student-list .student-table tbody tr:hover {
+  background: #f1f5f9;
+  transition: background-color 0.2s ease;
+  cursor: pointer;
+}
+
+/* Scrollbars */
+.evaluator-student-list .table-scroll::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.evaluator-student-list .table-scroll::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05);
+}
+.evaluator-student-list .table-scroll::-webkit-scrollbar-thumb {
+  background: rgba(0, 71, 171, 0.3);
+  border-radius: 4px;
+}
+.evaluator-student-list .table-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 71, 171, 0.5);
+}
+
+/* =========================================================================
+   FOOTER (non-sticky, always visible)
+   ========================================================================= */
+.evaluator-student-list .table-footer-container {
+  display: flex;
+  justify-content: flex-end;
+  flex: 0 0 auto;
+}
+.evaluator-student-list .table-footer {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: clamp(12px, 2vw, 24px);
+  padding: 0 8px;
+  margin-top: var(--footer-top-margin);
+  min-height: var(--footer-min-h);
+}
+.evaluator-student-list .total-label {
+  font-weight: 800;
+  color: #555;
+  font-size: clamp(12.5px, 1.5vw, 14px);
+  white-space: nowrap;
+}
+
+/* Support your original below-card total label if present */
+.evaluator-student-list .total-students {
+  font-weight: 600;
+  margin-top: 8px;
+  color: #0c2d52;
+}
+
+/* =========================================================================
+   ORIENTATION / SHORT-HEIGHT GUARDS
+   ========================================================================= */
+@media (max-width: 1279px) and (orientation: landscape) {
+  :root {
+    --rows-visible: 10;
+  }
+}
+@media (max-width: 1279px) and (max-height: 700px) {
+  :root {
+    --rows-visible: 10;
+  }
+}
+
+/* =========================================================================
+   RANGE BREAKPOINTS
+   ========================================================================= */
+@media (min-width: 600px) {
+  :root {
+    --row-h: 42px;
+    --head-h: 42px;
+    --rows-visible: 10;
+  }
+}
+@media (min-width: 768px) {
+  :root {
+    --row-h: 44px;
+    --head-h: 44px;
+    --rows-visible: 20;
+  }
+  .evaluator-student-list .student-table th,
+  .evaluator-student-list .student-table td {
+    padding: 8px 12px;
+  }
+}
+@media (min-width: 912px) {
+  :root {
+    --row-h: 44px;
+    --head-h: 44px;
+    --rows-visible: 20;
+  }
+  .evaluator-student-list .filters-rail {
+    gap: 14px;
+  }
+}
+@media (min-width: 1024px) {
+  :root {
+    --row-h: 44px;
+    --head-h: 44px;
+  }
+  .evaluator-student-list .student-table th,
+  .evaluator-student-list .student-table td {
+    font-size: 13px;
+  }
+}
+
+/* =========================================================================
+   DESKTOPS (≥1280) — static page, NO X-scroll
+   ========================================================================= */
+@media (min-width: 1280px) {
+  .evaluator-student-list {
+    overflow: hidden;
+  } /* page static */
+  .evaluator-student-list .content-scrollable {
+    overflow: hidden;
+  }
+
+  .evaluator-student-list .list-card,
+  .evaluator-student-list .studlist-card {
+    max-height: calc(
+      100svh - var(--bottom-nav-h) - var(--footer-min-h) -
+        var(--content-bpad-extra) - var(--content-vpad)
+    );
+  }
+
+  .evaluator-student-list .table-scroll {
+    overflow-x: hidden; /* no horizontal scroll on desktop */
+    max-height: 100%;
+  }
+  .evaluator-student-list .student-table {
+    min-width: 100%;
+  }
+}
+
+/* Larger desktops */
+@media (min-width: 1440px) {
+  .evaluator-student-list .content-scrollable {
+    padding: clamp(20px, 2vw, 32px);
+  }
+}
+@media (min-width: 1920px) {
+  .evaluator-student-list .student-table {
+    font-size: 15px;
+  }
+}
+
+/* =========================================================================
+   HORIZONTAL-SCROLL HINT OVERLAY (viewport-centered)
+   ========================================================================= */
+.evaluator-student-list .scroll-hint-overlay {
+  position: fixed;
+  inset: 0;
+  display: none; /* toggled via [data-open="1"] */
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  pointer-events: none;
+}
+.evaluator-student-list .scroll-hint-overlay[data-open="1"] {
+  display: flex;
+}
+.evaluator-student-list .scroll-hint {
+  background: rgba(12, 45, 82, 0.92);
+  color: #fff;
+  padding: 14px 18px;
+  border-radius: 10px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+  font-size: 15px;
+  line-height: 1.35;
+  text-align: center;
+  max-width: 86vw;
+}
+.evaluator-student-list .scroll-hint b {
+  color: var(--curric-gold);
+}
+
+/* ===== Desktop override: always show footer; shorten table as needed ===== */
+@media (min-width: 1280px) {
+  /* Let the card be flexible; the table owns the scroll/cap on desktop */
+  .evaluator-student-list .list-card,
+  .evaluator-student-list .studlist-card {
+    max-height: none;
+  }
+
+  /* Cap the table’s vertical size so the footer is consistently visible */
+  .evaluator-student-list .table-scroll {
+    /* Pick the smaller of a viewport slice (46vh) or a full budgeted calc */
+    max-height: min(
+      46vh,
+      calc(
+        100svh - var(--bottom-nav-h, 96px) - var(--footer-min-h, 44px) -
+          var(--content-bpad-extra, 4px) - var(--content-vpad, 24px) -
+          (var(--card-vpad, 12px) * 2) - var(--card-gap, 8px) -
+          var(--table-top-gap, 16px) - var(--table-bottom-gap, 2px) -
+          var(--header-estimate, 180px)
+      )
+    );
+    overflow-y: auto; /* vertical scroll lives here */
+    overflow-x: hidden; /* no horizontal scroll on desktop */
+  }
+
+  /* If the user manually resizes the container, let the table grow up to the full budget */
+  .evaluator-student-list .list-card.is-resized .table-scroll,
+  .evaluator-student-list .studlist-card.is-resized .table-scroll {
+    max-height: calc(
+      100svh - var(--bottom-nav-h, 96px) - var(--footer-min-h, 44px) -
+        var(--content-bpad-extra, 4px) - var(--content-vpad, 24px) -
+        (var(--card-vpad, 12px) * 2) - var(--card-gap, 8px) -
+        var(--table-top-gap, 16px) - var(--table-bottom-gap, 2px) -
+        var(--header-estimate, 180px)
+    );
+  }
+}

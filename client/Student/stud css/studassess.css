@@ -1,0 +1,460 @@
+/* ========================================================================
+   Student Assessment — Modern, Range-based Responsiveness (2025-09-03)
+   Mirrors Student Checklist standard. Table is the ONLY scroller.
+   Desktop: footer always visible by reducing table height.
+   Sub-desktop: X-scroll with centered hint.
+   Single custom resize handle on the container.
+   ======================================================================== */
+
+:root {
+  /* Brand */
+  --assess-blue: #0c2d52;
+  --assess-gold: #ffd700;
+  --assess-border-blue: #0047ab;
+
+  /* Frame / structure */
+  --card-radius: 16px;
+  --content-vpad: clamp(12px, 2vw, 24px);
+  --card-vpad: clamp(10px, 1.6vw, 12px);
+  --card-gap: 8px;
+
+  /* Spacing knobs */
+  --table-top-gap: 16px;
+  --table-bottom-gap: 2px;
+  --footer-top-margin: 4px;
+  --content-bpad-extra: 4px;
+
+  /* Table */
+  --table-font: 14px;
+  --table-min-w: 1120px; /* force horizontal overflow on narrow */
+
+  /* Manual-resize controls (container only) */
+  --table-min-h: 120px;
+  --resize-handle: 12px;
+
+  /* Layout budgets */
+  --bottom-nav-h: 96px;
+  --footer-min-h: 44px;
+  --header-estimate: 110px; /* filters/controls height budget */
+
+  /* Row sizing & caps (mobile-first) */
+  --row-h: 40px;
+  --head-h: 40px;
+  --rows-visible: 10; /* phones ≈ 10 rows */
+}
+
+/* =================== PAGE SCAFFOLD =================== */
+.assessment {
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  overflow-x: hidden; /* protect bottom nav from page X-scroll */
+  overflow-y: auto; /* page may scroll on sub-desktop */
+}
+
+.assessment .content-scrollable {
+  padding: var(--content-vpad);
+  padding-bottom: calc(
+    var(--content-bpad-extra) + var(--bottom-nav-h) +
+      env(safe-area-inset-bottom)
+  );
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: visible;
+}
+
+/* =================== CARD (blue frame) =================== */
+.assessment .assess-card {
+  position: relative;
+  background: #fff;
+  border: 2px solid var(--assess-border-blue);
+  border-radius: var(--card-radius);
+  padding: var(--card-vpad);
+  display: flex;
+  flex-direction: column;
+  gap: var(--card-gap);
+
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden; /* child scroller owns overflow */
+  resize: none;
+
+  /* Safe minimum: header + top gap + minimum table area + bottom gap + vpadding */
+  min-height: calc(
+    var(--header-estimate) + var(--table-top-gap) + var(--table-min-h) +
+      var(--table-bottom-gap) + (var(--card-vpad) + var(--card-vpad))
+  );
+
+  /* Cap by viewport so footer remains visible (mobile/tablet) */
+  max-height: calc(
+    100svh - var(--bottom-nav-h) - var(--footer-min-h) -
+      var(--content-bpad-extra) - var(--content-vpad)
+  );
+}
+
+/* Single custom resize handle */
+.assessment .assess-resize-handle {
+  position: relative;
+  height: 14px;
+  margin-top: 6px;
+  cursor: ns-resize;
+  touch-action: none;
+  user-select: none;
+  border-radius: 8px;
+
+  background: radial-gradient(
+        circle at 50% 6px,
+        rgba(0, 0, 0, 0.18) 0 2px,
+        transparent 2px
+      )
+      8px 0/16px 8px repeat-x,
+    radial-gradient(
+        circle at 50% 10px,
+        rgba(0, 0, 0, 0.12) 0 1px,
+        transparent 1px
+      )
+      16px 0/16px 8px repeat-x;
+}
+
+/* =================== FILTERS / DISPLAY CONTROLS (left rail) =================== */
+.assessment .filters-rail {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: max-content;
+  gap: 16px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x pinch-zoom;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+  padding: 2px 10px 6px;
+  justify-content: start; /* left aligned */
+  scroll-snap-type: x proximity;
+}
+.assessment .filters-rail::-webkit-scrollbar {
+  height: 6px;
+}
+.assessment .filters-rail::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 999px;
+}
+.assessment .filter-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+  white-space: nowrap;
+  min-width: 0;
+  scroll-snap-align: start;
+}
+.assessment .filter-label {
+  font-weight: 800;
+  color: var(--assess-blue);
+  font-size: clamp(13px, 1.6vw, 16px);
+}
+.assessment .filter-select {
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  padding: 4px 12px;
+  font-size: clamp(12.5px, 1.5vw, 14px);
+  background: #fff;
+  height: 36px;
+  line-height: 1.2;
+}
+
+.assessment .display-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: clamp(12px, 2.4vw, 24px);
+  flex: 0 0 auto;
+  margin-left: clamp(8px, 6vw, 48px);
+  white-space: nowrap;
+}
+.assessment .display-label {
+  color: var(--assess-blue);
+  font-weight: 800;
+  font-size: clamp(13px, 1.6vw, 16px);
+}
+.assessment .checkbox-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  font-size: clamp(13px, 1.6vw, 16px);
+}
+.assessment .checkbox-group.eligible {
+  color: #22c55e;
+}
+.assessment .checkbox-group.ineligible {
+  color: #ef4444;
+}
+.assessment .checkbox-group.offsem {
+  color: #6b7280;
+}
+.assessment .checkbox-group input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+}
+.assessment .checkbox-group input[type="checkbox"]:checked {
+  accent-color: currentColor;
+}
+
+/* =================== THE ONLY SCROLLER =================== */
+.assessment .table-scroll {
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+
+  overflow-y: auto; /* vertical scroll lives here */
+  overflow-x: auto; /* horizontal scroll appears on sub-desktop */
+
+  flex: 1 1 auto;
+  min-height: var(--table-min-h);
+  max-width: 100%;
+  margin-top: var(--table-top-gap);
+  margin-bottom: var(--table-bottom-gap);
+
+  -webkit-overflow-scrolling: touch;
+  scrollbar-gutter: stable both-edges;
+  overscroll-behavior: contain;
+  touch-action: pan-x pan-y;
+
+  /* Default caps (phones/tablets): ~10/20 rows + short-height guard */
+  max-height: min(
+    calc(var(--head-h) + var(--row-h) * var(--rows-visible)),
+    calc(
+      100svh - var(--bottom-nav-h) - var(--footer-min-h) -
+        var(--content-bpad-extra) - var(--content-vpad) -
+        (var(--card-vpad) + var(--card-vpad)) - var(--card-gap) -
+        var(--table-top-gap) - var(--header-estimate)
+    )
+  );
+
+  resize: none;
+}
+
+/* When container is manually resized, let table fill it 1:1 */
+.assessment .assess-card.is-resized .table-scroll {
+  max-height: 100%;
+}
+
+/* =================== TABLE VISUALS =================== */
+.assessment .assessment-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: auto;
+  font-size: var(--table-font);
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  min-width: var(--table-min-w);
+}
+.assessment .assessment-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background-color: #0047ab;
+  color: var(--assess-gold);
+}
+.assessment .assessment-table th {
+  padding: clamp(10px, 1.6vw, 12px) clamp(12px, 2vw, 16px);
+  text-align: left;
+  font-weight: 800;
+  border: none;
+  white-space: nowrap;
+  height: var(--head-h);
+}
+.assessment .assessment-table td {
+  padding: clamp(10px, 1.6vw, 12px) clamp(12px, 2vw, 16px);
+  border-bottom: 1px solid #e5e7eb;
+  vertical-align: middle;
+  height: var(--row-h);
+}
+
+/* Zebra + hover */
+.assessment .assessment-table tr.row-white {
+  background: #ffffff;
+}
+.assessment .assessment-table tr.row-blue {
+  background: #eff6ff;
+}
+.assessment .assessment-table tbody tr:hover {
+  background: #f1f5f9;
+  transition: background-color 0.2s ease;
+}
+
+/* Status colors */
+.assessment .assessment-table .status-eligible {
+  color: #22c55e;
+}
+.assessment .assessment-table .status-ineligible {
+  color: #ef4444;
+}
+.assessment .assessment-table .status-offsem {
+  color: #6b7280;
+}
+
+/* Scrollbar styling */
+.assessment .table-scroll::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.assessment .table-scroll::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05);
+}
+.assessment .table-scroll::-webkit-scrollbar-thumb {
+  background: rgba(0, 71, 171, 0.3);
+  border-radius: 4px;
+}
+.assessment .table-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 71, 171, 0.5);
+}
+
+/* =================== FOOTER (non-sticky, always visible) =================== */
+.assessment .table-footer-container {
+  display: flex;
+  justify-content: flex-end;
+  flex: 0 0 auto;
+}
+.assessment .table-footer {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: clamp(12px, 2vw, 24px);
+  padding: 0 8px;
+  margin-top: var(--footer-top-margin);
+  min-height: var(--footer-min-h);
+  flex-wrap: nowrap;
+}
+.assessment .row-count-label {
+  min-width: 0;
+  flex: 1 1 auto;
+  text-align: right;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: clamp(12.5px, 1.5vw, 14px);
+  font-weight: 800;
+  color: #555;
+}
+
+/* =================== ORIENTATION / SHORT HEIGHT GUARDS =================== */
+@media (max-width: 1279px) and (orientation: landscape) {
+  :root {
+    --rows-visible: 10;
+  }
+}
+@media (max-width: 1279px) and (max-height: 700px) {
+  :root {
+    --rows-visible: 10;
+  }
+}
+
+/* =================== RANGE BREAKPOINTS =================== */
+@media (min-width: 600px) {
+  :root {
+    --row-h: 42px;
+    --head-h: 42px;
+    --rows-visible: 10;
+  }
+}
+@media (min-width: 768px) {
+  :root {
+    --row-h: 44px;
+    --head-h: 44px;
+    --rows-visible: 20;
+  }
+  .assessment .assessment-table th,
+  .assessment .assessment-table td {
+    padding: 8px 12px;
+  }
+}
+@media (min-width: 912px) {
+  :root {
+    --row-h: 44px;
+    --head-h: 44px;
+    --rows-visible: 20;
+  }
+}
+@media (min-width: 1024px) {
+  :root {
+    --row-h: 44px;
+    --head-h: 44px;
+  }
+  .assessment .assessment-table th,
+  .assessment .assessment-table td {
+    font-size: 13px;
+  }
+}
+
+/* =================== DESKTOP (≥1280): page static; keep footer visible =================== */
+@media (min-width: 1280px) {
+  .assessment {
+    overflow: hidden;
+  }
+  .assessment .content-scrollable {
+    overflow: hidden;
+  }
+
+  /* Let the table own the scroll; keep footer visible by reducing table height */
+  .assessment .assess-card {
+    max-height: none;
+  }
+
+  .assessment .table-scroll {
+    max-height: min(
+      34vh,
+      calc(
+        100svh - var(--bottom-nav-h, 96px) - var(--footer-min-h, 44px) -
+          var(--content-bpad-extra, 4px) - var(--content-vpad, 24px) -
+          (var(--card-vpad, 12px) * 2) - var(--card-gap, 8px) -
+          var(--table-top-gap, 16px) - var(--table-bottom-gap, 2px) -
+          var(--header-estimate, 110px)
+      )
+    );
+    overflow-y: auto; /* vertical scroll here on desktop */
+    overflow-x: hidden; /* no horizontal scroll on desktop */
+  }
+
+  .assessment .assessment-table {
+    min-width: 100%;
+  } /* fit container */
+}
+
+/* ≥1440: breathe a bit more */
+@media (min-width: 1440px) {
+  .assessment .content-scrollable {
+    padding: clamp(20px, 2vw, 32px);
+  }
+}
+
+/* =================== VIEWPORT-CENTERED SCROLL HINT OVERLAY =================== */
+.assessment .scroll-hint-overlay {
+  position: fixed;
+  inset: 0;
+  display: none; /* toggled by [data-open="1"] */
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  pointer-events: none;
+}
+.assessment .scroll-hint-overlay[data-open="1"] {
+  display: flex;
+}
+.assessment .scroll-hint {
+  background: rgba(12, 45, 82, 0.92);
+  color: #fff;
+  padding: 14px 18px;
+  border-radius: 10px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+  font-size: 15px;
+  line-height: 1.35;
+  text-align: center;
+  max-width: 86vw;
+}
+.assessment .scroll-hint b {
+  color: var(--assess-gold);
+}

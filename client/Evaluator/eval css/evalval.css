@@ -1,0 +1,703 @@
+/* ========== Validate Module — SCOPED STYLES ONLY ========== */
+/* Page stays static; only the tables scroll */
+.validate-module {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden; /* stop page/body scroll */
+}
+
+/* Master layout area */
+.validate-module .validation-grid {
+  display: grid;
+  grid-template-columns: 1fr; /* 1 column mobile/tablet */
+  gap: 24px;
+  padding: 16px 24px;
+  padding-bottom: 96px; /* clear the fixed bottom nav */
+  flex: 1 1 auto;
+  min-height: 0; /* allow inner scrolling */
+  overflow: hidden;
+
+  /* explicit areas so mobile shows tables first, then right panel */
+  grid-template-areas:
+    "tables"
+    "right";
+}
+
+/* IMPORTANT: allow grid items to actually shrink (enables X-scroll inside) */
+.validate-module .validation-grid > * {
+  min-width: 0;
+}
+
+.validate-module .tables-section {
+  grid-area: tables;
+}
+.validate-module .right-panel {
+  grid-area: right;
+}
+
+/* Left-side stack of table cards */
+.validate-module .tables-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-height: 0;
+  min-width: 0; /* allow shrink inside grid */
+}
+
+/* ===== Card containers (match other modules) ===== */
+.validate-module .checklist-container,
+.validate-module .schedule-container {
+  background: #ffffff;
+  border: 2px solid #0047ab;
+  border-radius: 16px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0; /* critical for nested overflow */
+  min-width: 0; /* allow inner scroller to shrink */
+  overflow: hidden; /* keep rounded corners */
+}
+
+/* Matched section titles: bold, medium size */
+.validate-module .checklist-header h2,
+.validate-module .schedule-container > .schedule-header h2,
+.validate-module .schedule-container > h2 {
+  font-size: 18px; /* not too big, not small */
+  line-height: 1.2;
+  font-weight: 700;
+  color: #0c2d52;
+  margin: 0;
+}
+
+/* Checklist header row */
+.validate-module .checklist-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+.validate-module .checklist-filters {
+  display: inline-flex;
+  gap: 8px;
+  flex-wrap: nowrap;
+}
+.validate-module .checklist-filters select {
+  border: 1px solid #ddd;
+  border-radius: 20px;
+  padding: 4px 12px;
+  font-size: 14px;
+  background: #fff;
+}
+
+/* Optional wrapper for schedule header to keep symmetry */
+.validate-module .schedule-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* ===== Scrollable table area (the ONLY scroller) ===== */
+/* Mirrors Student List behavior: shrinkable width + X-scroll on narrow */
+.validate-module .table-wrapper {
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  overflow-y: auto;
+  overflow-x: auto; /* enable horizontal scroll on narrow widths */
+
+  flex: 1 1 auto; /* fill remaining height inside the card */
+  min-height: 0;
+  min-width: 0; /* KEY: allow the wrapper to shrink within grid/flex */
+  max-width: 100%; /* prevent bleeding outside the card */
+
+  /* Adjustable knobs (override on page if wanted)
+     body.validate-module { --validate-table-h: auto; --validate-table-max-h: 70vh; } */
+  height: var(--validate-table-h, auto);
+
+  /* Sub-desktop: keep tables visibly smaller and never clash with bottom nav.
+     Uses either the row-cap or a viewport-aware cap, whichever is smaller. */
+  max-height: min(
+    var(--validate-table-max-h, calc(48px + (44px * 10))),
+    /* ~10 rows + header */
+      calc(
+        100svh - var(--bottom-nav-h, 96px) - var(--content-vpad, 24px) - 180px
+          /* conservative header + margins budget */
+      )
+  );
+
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x pan-y;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable both-edges;
+}
+
+/* When user resizes the container, let table fill it 1:1 */
+.validate-module .checklist-container.is-resized .table-wrapper,
+.validate-module .schedule-container.is-resized .table-wrapper {
+  max-height: 100%;
+}
+
+/* ===== Tables: theme-consistent visuals ===== */
+/* Force min-width so X-scroll appears naturally on narrow devices */
+.validate-module .checklist-table,
+.validate-module .schedule-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 14px; /* keep same data size as other modules */
+  text-align: left;
+  table-layout: auto;
+
+  /* KEY: same pattern as evalstudlist — triggers X-scroll below this width */
+  min-width: 1120px;
+
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+/* Let header labels wrap nicely when cramped; allow hyphenation */
+.validate-module .checklist-table thead,
+.validate-module .schedule-table thead {
+  background-color: #0c2d52;
+  color: #ffd700;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+.validate-module .checklist-table th,
+.validate-module .schedule-table th {
+  padding: 12px 16px;
+  font-weight: 700;
+  border: none;
+  text-align: left;
+
+  /* responsiveness for cramped columns */
+  white-space: normal;
+  line-height: 1.25;
+  hyphens: auto;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+.validate-module .checklist-table td,
+.validate-module .schedule-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid #eee;
+  vertical-align: middle;
+  color: #24364d;
+  font-size: 14px;
+}
+
+.validate-module .checklist-table tbody tr:nth-child(even),
+.validate-module .schedule-table tbody tr:nth-child(even) {
+  background-color: #f8f9fa;
+}
+.validate-module .checklist-table tbody tr:hover,
+.validate-module .schedule-table tbody tr:hover {
+  background-color: #e9ecef;
+}
+
+/* =================== RIGHT PANEL (kept; themed) =================== */
+.validate-module .right-panel {
+  background: #0b4d8f; /* blue container */
+  border-radius: 12px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  color: #fff;
+  min-height: 0;
+  min-width: 0; /* allow shrink on tablet widths */
+}
+
+/* Current Student Card */
+.validate-module .current-student {
+  background: #ffffff;
+  border: 3px solid #ffd700;
+  border-radius: 12px;
+  padding: 12px 14px;
+  display: grid;
+  grid-template-columns: 56px 1fr;
+  gap: 10px;
+  align-items: center;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  color: #0c2d52;
+}
+.validate-module .current-student .avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: #f0f4f8;
+  border: 2px solid #e6eef6;
+  font-size: 30px;
+  color: #0c2d52;
+}
+.validate-module .current-student .name {
+  font-weight: 800;
+  line-height: 1.1;
+  font-size: 16px;
+  color: #0c2d52;
+}
+.validate-module .current-student .meta {
+  font-size: 12px;
+  font-weight: 900;
+  color: #0c2d52;
+  opacity: 0.9;
+}
+
+/* Student Switcher */
+.validate-module .student-switcher {
+  display: grid;
+  grid-template-columns: 44px 1fr 44px;
+  gap: 12px;
+  align-items: center;
+}
+.validate-module .switch-btn {
+  height: 40px;
+  border-radius: 10px;
+  border: none;
+  background: #ffd700;
+  color: #0c2d52;
+  font-size: 16px;
+  cursor: pointer;
+  transition: transform 0.05s ease, filter 0.15s ease;
+}
+.validate-module .switch-btn:hover {
+  filter: brightness(0.98);
+}
+.validate-module .switch-btn:active {
+  transform: translateY(1px);
+}
+
+/* Combobox */
+.validate-module .student-chooser {
+  position: relative;
+}
+.validate-module .combo-toggle {
+  width: 100%;
+  height: 40px;
+  background: #ffffff;
+  border: 2px solid #e6eef6;
+  color: #0c2d52;
+  border-radius: 10px;
+  padding: 0 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: box-shadow 0.15s ease, border-color 0.15s ease;
+}
+.validate-module .combo-toggle:focus-visible {
+  outline: none;
+  border-color: #ffd700;
+  box-shadow: 0 0 0 3px rgba(255, 215, 0, 0.35);
+}
+.validate-module .combo-toggle .combo-label {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.validate-module .combo-panel {
+  position: absolute;
+  z-index: 20;
+  top: 44px;
+  left: 0;
+  right: 0;
+  background: #ffffff;
+  border: 2px solid #ffd700;
+  border-radius: 12px;
+  box-shadow: 0 12px 28px rgba(12, 45, 82, 0.25);
+  padding: 8px;
+}
+.validate-module .combo-search {
+  display: grid;
+  grid-template-columns: 20px 1fr;
+  align-items: center;
+  gap: 8px;
+  background: #f5f6fa;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 6px 8px;
+  color: #375d83;
+  margin-bottom: 8px;
+}
+.validate-module .combo-search input {
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 14px;
+  color: #0c2d52;
+}
+.validate-module .combo-options {
+  list-style: none;
+  margin: 0;
+  padding: 4px 0;
+  max-height: 220px;
+  overflow: auto;
+}
+.validate-module .combo-option {
+  padding: 8px 10px;
+  border-radius: 8px;
+  margin: 0 4px;
+  cursor: pointer;
+  color: #0c2d52;
+  font-weight: 600;
+}
+.validate-module .combo-option:hover {
+  background: #0c2d52;
+  color: #ffd700;
+}
+.validate-module .combo-option[aria-selected="true"] {
+  background: #ffd700;
+  color: #0c2d52;
+}
+.validate-module .combo-option.hidden {
+  display: none;
+}
+
+/* Messaging Card */
+.validate-module .message-card {
+  background: #ffd700;
+  border-radius: 12px;
+  padding: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  color: #0c2d52;
+  margin-top: 16px;
+}
+.validate-module .message-card .head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.validate-module .message-card .head .title {
+  font-weight: 800;
+  font-size: 16px;
+}
+.validate-module .message-card textarea {
+  width: 100%;
+  min-height: 90px;
+  resize: vertical;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 14px;
+  color: #111827;
+  outline: none;
+}
+.validate-module .message-card textarea:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+.validate-module .send-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 10px;
+}
+.validate-module .btn-send {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 16px;
+  border-radius: 999px;
+  border: 1px solid #2563eb;
+  background: #2563eb;
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+  transition: filter 0.15s ease;
+}
+.validate-module .btn-send:hover {
+  filter: brightness(1.05);
+}
+.validate-module .btn-send:active {
+  filter: brightness(0.95);
+}
+
+/* Flag Buttons */
+.validate-module .flag-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid #ffffff33;
+}
+.validate-module .flag-btn {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 999px;
+  height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-weight: 800;
+  color: #0c2d52;
+  cursor: pointer;
+  transition: transform 0.05s ease, box-shadow 0.15s ease;
+}
+.validate-module .flag-btn:hover {
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+}
+.validate-module .flag-btn:active {
+  transform: translateY(1px);
+}
+.validate-module .flag-btn .icon-up {
+  color: #28a745;
+}
+.validate-module .flag-btn .icon-down {
+  color: #dc3545;
+}
+
+/* ===== Desktop: keep right panel at the side; no X-scroll ===== */
+@media (min-width: 1200px) {
+  .validate-module .validation-grid {
+    grid-template-columns: 3fr 1fr;
+    grid-template-areas: "tables right";
+  }
+}
+@media (min-width: 1280px) {
+  .validate-module .table-wrapper {
+    overflow-x: hidden; /* no horizontal scroll on desktop */
+  }
+  .validate-module .checklist-table,
+  .validate-module .schedule-table {
+    min-width: 100%; /* fit container width on desktop */
+  }
+}
+
+/* ===== Per-card resize handle (visual only; JS already present) ===== */
+.validate-module .table-resize-handle {
+  position: relative;
+  height: 14px;
+  margin-top: 6px;
+  cursor: ns-resize;
+  touch-action: none;
+  user-select: none;
+  border-radius: 8px;
+  background: radial-gradient(
+        circle at 50% 6px,
+        rgba(0, 0, 0, 0.18) 0 2px,
+        transparent 2px
+      )
+      8px 0/16px 8px repeat-x,
+    radial-gradient(
+        circle at 50% 10px,
+        rgba(0, 0, 0, 0.12) 0 1px,
+        transparent 1px
+      )
+      16px 0/16px 8px repeat-x;
+}
+
+/* ===== Small-screen refinements ===== */
+@media (max-width: 912px) {
+  /* Slightly smaller header text when cramped */
+  .validate-module .checklist-table th,
+  .validate-module .schedule-table th {
+    font-size: 13.5px;
+    padding: 10px 14px; /* a touch tighter */
+  }
+}
+
+@media (max-width: 768px) {
+  .validate-module .validation-grid {
+    padding: 16px;
+  }
+  .validate-module .checklist-container,
+  .validate-module .schedule-container {
+    padding: 10px;
+  }
+
+  /* keep ~10 rows cap or viewport budget, whichever is smaller */
+  .validate-module .table-wrapper {
+    max-height: min(
+      var(--validate-table-max-h, calc(48px + (42px * 10))),
+      calc(
+        100svh - var(--bottom-nav-h, 96px) - var(--content-vpad, 24px) - 170px
+      )
+    );
+  }
+
+  .validate-module .checklist-table th,
+  .validate-module .schedule-table th {
+    font-size: 13px;
+    padding: 10px 12px;
+  }
+  .validate-module .checklist-table td,
+  .validate-module .schedule-table td {
+    padding: 10px 12px;
+    font-size: 13.5px;
+  }
+}
+
+@media (max-width: 480px) {
+  .validate-module .validation-grid {
+    padding: 12px;
+  }
+  .validate-module .checklist-container,
+  .validate-module .schedule-container {
+    padding: 10px;
+  }
+
+  .validate-module .checklist-table th,
+  .validate-module .schedule-table th,
+  .validate-module .checklist-table td,
+  .validate-module .schedule-table td {
+    padding: 8px 10px;
+    font-size: 12.5px; /* slightly smaller for very narrow screens */
+    line-height: 1.25;
+  }
+}
+
+/* ===== Horizontal-scroll hint overlay (SCOPED — JS to be added later) ===== */
+.validate-module .scroll-hint-overlay {
+  position: fixed;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  pointer-events: none;
+}
+.validate-module .scroll-hint-overlay[data-open="1"] {
+  display: flex;
+}
+.validate-module .scroll-hint {
+  background: rgba(12, 45, 82, 0.92);
+  color: #fff;
+  padding: 14px 18px;
+  border-radius: 10px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+  font-size: 15px;
+  line-height: 1.35;
+  text-align: center;
+  max-width: 86vw;
+}
+.validate-module .scroll-hint b {
+  color: #ffd700;
+}
+
+/* ===== RIGHT PANEL SHRINK (tablet & mobile only) — OVERRIDE ===== */
+@media (max-width: 1199px) {
+  /* Make the panel itself smaller and scrollable, with room above bottom nav */
+  .validate-module .right-panel {
+    padding: 12px; /* ↓ from 20px */
+    gap: 10px; /* ↓ from 16px */
+    max-height: calc(100svh - 8px);
+    overflow-y: auto;
+    /* ensure last controls clear the fixed bottom nav */
+    padding-bottom: calc(
+      var(--bottom-nav-h, 96px) + 24px + env(safe-area-inset-bottom, 0px)
+    );
+    scroll-padding-bottom: calc(
+      var(--bottom-nav-h, 96px) + 24px + env(safe-area-inset-bottom, 0px)
+    );
+  }
+
+  /* Compact current-student card */
+  .validate-module .current-student {
+    grid-template-columns: 40px 1fr; /* 56 → 40 */
+    padding: 8px 10px; /* tighter */
+    gap: 8px;
+  }
+  .validate-module .current-student .avatar {
+    width: 40px;
+    height: 40px;
+    font-size: 22px;
+  }
+  .validate-module .current-student .name {
+    font-size: 14.5px;
+  }
+  .validate-module .current-student .meta {
+    font-size: 11px;
+  }
+
+  /* Smaller switcher + combobox */
+  .validate-module .student-switcher {
+    gap: 8px;
+  }
+  .validate-module .switch-btn {
+    height: 32px;
+    font-size: 14px;
+  }
+  .validate-module .combo-toggle {
+    height: 34px;
+    padding: 0 10px;
+    font-size: 13.5px;
+  }
+  .validate-module .combo-search {
+    padding: 5px 8px;
+  }
+  .validate-module .combo-search input {
+    font-size: 13px;
+  }
+  .validate-module .combo-options {
+    max-height: 180px;
+  }
+
+  /* Shorter message box */
+  .validate-module .message-card {
+    padding: 8px 10px;
+  }
+  .validate-module .message-card .head {
+    margin-bottom: 6px;
+  }
+  .validate-module .message-card .head .title {
+    font-size: 13.5px;
+  }
+  .validate-module .message-card textarea {
+    min-height: 52px; /* 90 → 52 */
+    padding: 8px 10px;
+    font-size: 13px;
+  }
+  .validate-module .send-row {
+    margin-top: 6px;
+  }
+  .validate-module .btn-send {
+    height: 34px;
+    padding: 0 12px;
+    font-size: 13px;
+  }
+
+  /* Smaller approve/flag buttons (no sticky; relies on panel padding above) */
+  .validate-module .flag-buttons {
+    margin-top: 8px;
+    gap: 8px;
+  }
+  .validate-module .flag-btn {
+    height: 36px;
+    font-size: 13.5px;
+    gap: 8px;
+  }
+}
+/* ===== Fix: Right panel should end at the buttons (tablet & mobile) ===== */
+@media (max-width: 1199px) {
+  .validate-module .right-panel {
+    /* stop forcing extra tall container */
+    max-height: none !important;
+    height: auto !important;
+    overflow-y: visible !important;
+
+    /* remove the big safety pad; the grid already has padding-bottom for the nav */
+    padding-bottom: 12px !important;
+    scroll-padding-bottom: 0 !important;
+  }
+
+  /* make sure the action row isn’t sticky and doesn’t create extra “tail” */
+  .validate-module .flag-buttons {
+    position: static !important;
+    margin-top: 8px; /* small gap above the buttons */
+    padding-bottom: 0; /* no extra blue after the buttons */
+    background: none; /* remove any gradient carryover */
+  }
+}
