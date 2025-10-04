@@ -58,6 +58,19 @@
 })();
 
 document.addEventListener("DOMContentLoaded", function () {
+  // Hide delete modal on load to prevent startup popup
+  const deleteModal = document.getElementById("deleteConfirmationModal");
+  if (deleteModal) {
+    deleteModal.style.display = "none";
+    deleteModal.dataset.fileId = "";
+  }
+
+  // Hide preview modal on load
+  const previewModal = document.getElementById("filePreviewModal");
+  if (previewModal) {
+    previewModal.style.display = "none";
+  }
+
   const sidebar = document.getElementById("sidebar");
   const hdrToggle = document.getElementById("toggleBtnHeader");
   const bottomNav = document.getElementById("bottomNav");
@@ -141,50 +154,562 @@ document.addEventListener("DOMContentLoaded", function () {
     window.location.href = "login.html";
   });
 
-  // ===== Drag & drop visual affordances =====
-  const dropzones = document.querySelectorAll(".dropzone");
-  dropzones.forEach((dropzone) => {
-    dropzone.addEventListener("dragover", (e) => {
+  // ===== Load uploaded files on page load =====
+  loadUploadedFiles("grades");
+  loadUploadedFiles("schedules");
+
+  const cancelGradesBtn = document.getElementById("cancelGradesBtn");
+  const cancelSchedulesBtn = document.getElementById("cancelSchedulesBtn");
+
+  let currentType = ""; // 'grades' or 'schedules'
+
+  // Manage buttons
+  document.querySelectorAll(".manage-imports-btn").forEach(btn => {
+    btn.addEventListener("click", (e) => {
       e.preventDefault();
-      dropzone.style.borderColor = "#FFD700";
-      dropzone.style.backgroundColor = "rgba(255, 215, 0, 0.2)";
+      currentType = e.currentTarget.dataset.type;
+      showManageModal();
     });
-    dropzone.addEventListener("dragleave", () => {
-      dropzone.style.borderColor = "#0c2d52";
-      dropzone.style.backgroundColor = "";
-    });
-    dropzone.addEventListener("drop", (e) => {
-      e.preventDefault();
-      dropzone.style.borderColor = "#0c2d52";
-      dropzone.style.backgroundColor = "";
-      if (e.dataTransfer.files.length) {
-        const fileInput = dropzone.querySelector(".file-input");
-        if (fileInput) {
-          fileInput.files = e.dataTransfer.files;
-          fileInput.dispatchEvent(new Event("change"));
-        }
+  });
+
+  // Delete confirmation modal elements
+  const deleteModalClose = document.getElementById("deleteModalClose");
+  const deleteCancelBtn = document.getElementById("deleteCancelBtn");
+  const deleteConfirmBtn = document.getElementById("deleteConfirmBtn");
+
+  // Delete modal event listeners
+  deleteModalClose?.addEventListener("click", () => {
+    deleteModal.style.display = "none";
+  });
+  deleteCancelBtn?.addEventListener("click", () => {
+    deleteModal.style.display = "none";
+  });
+  deleteConfirmBtn?.addEventListener("click", async () => {
+    const fileId = deleteModal.dataset.fileId;
+    if (!fileId) return;
+    deleteModal.style.display = "none";
+
+    try {
+      const deleteUrl = `http://localhost:4000/api/import/uploads/${encodeURIComponent(fileId)}`;
+      const deleteRes = await fetch(deleteUrl, {
+        method: 'DELETE',
+        credentials: "include",
+        headers: { "X-Requested-With": "fetch" },
+      });
+
+      if (!deleteRes.ok) throw new Error(`Delete failed: ${deleteRes.status}`);
+
+      const deleteData = await deleteRes.json();
+      if (deleteData.success) {
+        showToast("File deleted successfully.", "success");
+        // Refresh the files list
+        loadUploadedFiles(currentType);
+      } else {
+        throw new Error(deleteData.error || 'Delete failed');
+      }
+    } catch (err) {
+      console.error('Delete error:', err);
+      showToast('Failed to delete file: ' + err.message, "error");
+    }
+  });
+
+  // Close delete modal on outside click or escape
+  deleteModal?.addEventListener("click", (e) => {
+    if (e.target === deleteModal) deleteModal.style.display = "none";
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && deleteModal.style.display === "flex") {
+      deleteModal.style.display = "none";
+    }
+  });
+
+  // Tab switching for grades modal
+  const gradesTabBtns = document.querySelectorAll("#manageGradesModal .tab-btn");
+  const gradesTabContents = document.querySelectorAll("#manageGradesModal .tab-content");
+  const confirmGradesBtn = document.getElementById("confirmGradesBtn");
+  const addGradesFile = document.getElementById("addGradesFile");
+  const addGradesAttachments = document.getElementById("addGradesAttachments");
+  const storedGradesList = document.getElementById("storedGradesList");
+
+  gradesTabBtns.forEach(btn => {
+    btn.addEventListener("click", () => {
+      const target = btn.dataset.tab;
+      gradesTabBtns.forEach(b => b.classList.remove("active"));
+      gradesTabContents.forEach(c => c.classList.remove("active"));
+      btn.classList.add("active");
+      document.getElementById(target + "GradesTab").classList.add("active");
+      // Update confirm button text
+      confirmGradesBtn.textContent = target === "add" ? "Add Files" : "Remove Files";
+      confirmGradesBtn.disabled = true;
+
+      // Clear any existing attachments when switching tabs
+      if (target === "add") {
+        addGradesAttachments.innerHTML = "";
+        if (addGradesFile) addGradesFile.value = "";
+      } else if (target === "remove") {
+        addGradesAttachments.innerHTML = "";
+        if (addGradesFile) addGradesFile.value = "";
+        // Show stored files when switching to remove tab
+        showStoredFiles("grades");
       }
     });
   });
 
-  // ===== Custom Toasts (theme-aligned) =====
-  function showToast(type, message) {
+  // Tab switching for schedules modal
+  const schedulesTabBtns = document.querySelectorAll("#manageSchedulesModal .tab-btn");
+  const schedulesTabContents = document.querySelectorAll("#manageSchedulesModal .tab-content");
+  const confirmSchedulesBtn = document.getElementById("confirmSchedulesBtn");
+  const addSchedulesFile = document.getElementById("addSchedulesFile");
+  const addSchedulesAttachments = document.getElementById("addSchedulesAttachments");
+  const storedSchedulesList = document.getElementById("storedSchedulesList");
+
+  schedulesTabBtns.forEach(btn => {
+    btn.addEventListener("click", () => {
+      const target = btn.dataset.tab;
+      schedulesTabBtns.forEach(b => b.classList.remove("active"));
+      schedulesTabContents.forEach(c => c.classList.remove("active"));
+      btn.classList.add("active");
+      document.getElementById(target + "SchedulesTab").classList.add("active");
+      // Update confirm button text
+      confirmSchedulesBtn.textContent = target === "add" ? "Add Files" : "Remove Files";
+      confirmSchedulesBtn.disabled = true;
+
+      // Clear any existing attachments when switching tabs
+      if (target === "add") {
+        addSchedulesAttachments.innerHTML = "";
+        if (addSchedulesFile) addSchedulesFile.value = "";
+      } else if (target === "remove") {
+        addSchedulesAttachments.innerHTML = "";
+        if (addSchedulesFile) addSchedulesFile.value = "";
+        // Show stored files when switching to remove tab
+        showStoredFiles("schedules");
+      }
+    });
+  });
+
+  // Function to show stored files in the remove tab
+  async function showStoredFiles(type) {
+    const storedList = type === "grades" ? storedGradesList : storedSchedulesList;
+    if (!storedList) return;
+
+    try {
+      const url = `http://localhost:4000/api/import/uploads/${type}`;
+      const res = await fetch(url, {
+        credentials: "include",
+        headers: { "X-Requested-With": "fetch" },
+      });
+
+      if (!res.ok) throw new Error(`Failed to fetch uploads: ${res.status}`);
+
+      const data = await res.json();
+      const uploads = Array.isArray(data.uploads) ? data.uploads : [];
+
+      if (uploads.length === 0) {
+        storedList.innerHTML = '<p style="text-align: center; color: #6b7280; padding: 20px;">No stored files found.</p>';
+        return;
+      }
+
+      const filesHtml = uploads.map(upload => `
+        <div class="stored-file-item" style="display: flex; align-items: center; gap: 12px; padding: 12px; background: #f9fafb; border-radius: 8px; margin-bottom: 8px; border: 1px solid #e5e7eb;">
+          <i class="fa-solid fa-file-excel" style="color: #dc2626; font-size: 18px;"></i>
+          <div style="flex: 1;">
+            <div style="font-weight: 600; color: #111827;">${escapeHtml(upload.originalName)}</div>
+            <div style="font-size: 12px; color: #6b7280;">
+              ${(upload.size / 1024).toFixed(1)} KB • ${new Date(upload.createdAt).toLocaleDateString()}
+            </div>
+          </div>
+          <button type="button" class="delete-file-btn" data-file-id="${upload.id}" style="background: #dc2626; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px;" title="Delete this file">
+            <i class="fa-solid fa-trash"></i> Delete
+          </button>
+        </div>
+      `).join('');
+
+      storedList.innerHTML = filesHtml;
+
+      // Add event listeners to delete buttons
+      storedList.querySelectorAll('.delete-file-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          const fileId = e.currentTarget.dataset.fileId;
+          if (!fileId) return;
+          deleteModal.dataset.fileId = fileId;
+          deleteModal.style.display = "flex";
+        });
+      });
+
+    } catch (err) {
+      console.error('Error fetching stored files:', err);
+      storedList.innerHTML = '<p style="text-align: center; color: #dc2626; padding: 20px;">Error loading stored files.</p>';
+    }
+  }
+
+  function showManageModal() {
+    const modal = currentType === "grades" ? document.getElementById("manageGradesModal") : document.getElementById("manageSchedulesModal");
+    if (modal) {
+      modal.style.display = "flex";
+      // Default to add tab
+      const tabBtns = modal.querySelectorAll(".tab-btn");
+      tabBtns[0]?.click();
+    }
+  }
+
+  function closeManageModal(modal) {
+    if (modal) {
+      modal.style.display = "none";
+      // Reset state
+      const fileInput = modal.querySelector('input[type="file"]');
+      const attachments = modal.querySelector('.attachments-list');
+      const storedList = modal.querySelector('.stored-files-list');
+      const confirmBtn = modal.querySelector('.modal-actions button:last-child');
+      if (fileInput) fileInput.value = "";
+      if (attachments) attachments.innerHTML = "";
+      if (storedList) storedList.innerHTML = "";
+      if (confirmBtn) {
+        confirmBtn.textContent = "Add Files";
+        confirmBtn.disabled = true;
+      }
+    }
+  }
+
+  // Close modal for grades
+  const manageGradesModalClose = document.getElementById("manageGradesModalClose");
+  manageGradesModalClose?.addEventListener("click", () => closeManageModal(document.getElementById("manageGradesModal")));
+  cancelGradesBtn?.addEventListener("click", () => closeManageModal(document.getElementById("manageGradesModal")));
+
+  // Close modal for schedules
+  const manageSchedulesModalClose = document.getElementById("manageSchedulesModalClose");
+  manageSchedulesModalClose?.addEventListener("click", () => closeManageModal(document.getElementById("manageSchedulesModal")));
+  cancelSchedulesBtn?.addEventListener("click", () => closeManageModal(document.getElementById("manageSchedulesModal")));
+
+  // Close on outside click or escape for grades
+  const manageGradesModal = document.getElementById("manageGradesModal");
+  manageGradesModal?.addEventListener("click", (e) => {
+    if (e.target === manageGradesModal) closeManageModal(manageGradesModal);
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && manageGradesModal.style.display === "flex") {
+      closeManageModal(manageGradesModal);
+    }
+  });
+
+  // Close on outside click or escape for schedules
+  const manageSchedulesModal = document.getElementById("manageSchedulesModal");
+  manageSchedulesModal?.addEventListener("click", (e) => {
+    if (e.target === manageSchedulesModal) closeManageModal(manageSchedulesModal);
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && manageSchedulesModal.style.display === "flex") {
+      closeManageModal(manageSchedulesModal);
+    }
+  });
+
+  // Drag and drop for grades add tab
+  const addGradesDropzone = document.querySelector('[data-zone="add-grades"]');
+  if (addGradesDropzone) {
+    addGradesDropzone.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      addGradesDropzone.classList.add("dragover");
+    });
+    addGradesDropzone.addEventListener("dragleave", (e) => {
+      e.preventDefault();
+      addGradesDropzone.classList.remove("dragover");
+    });
+    addGradesDropzone.addEventListener("drop", (e) => {
+      e.preventDefault();
+      addGradesDropzone.classList.remove("dragover");
+      const file = e.dataTransfer.files[0];
+      if (file && (file.type === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" || file.name.toLowerCase().endsWith(".xlsx") || file.name.toLowerCase().endsWith(".csv") || file.name.toLowerCase().endsWith(".pdf"))) {
+        addGradesFile.files = e.dataTransfer.files;
+        updateFileDisplay(file, "add", "grades");
+      } else {
+        showToast("Please select a XLSX, CSV, or PDF file", "error");
+      }
+    });
+    addGradesDropzone.addEventListener("click", () => {
+      addGradesFile.click();
+    });
+  }
+
+  // Drag and drop for schedules add tab
+  const addSchedulesDropzone = document.querySelector('[data-zone="add-schedules"]');
+  if (addSchedulesDropzone) {
+    addSchedulesDropzone.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      addSchedulesDropzone.classList.add("dragover");
+    });
+    addSchedulesDropzone.addEventListener("dragleave", (e) => {
+      e.preventDefault();
+      addSchedulesDropzone.classList.remove("dragover");
+    });
+    addSchedulesDropzone.addEventListener("drop", (e) => {
+      e.preventDefault();
+      addSchedulesDropzone.classList.remove("dragover");
+      const file = e.dataTransfer.files[0];
+      if (file && (file.type === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" || file.name.toLowerCase().endsWith(".xlsx") || file.name.toLowerCase().endsWith(".csv"))) {
+        addSchedulesFile.files = e.dataTransfer.files;
+        updateFileDisplay(file, "add", "schedules");
+      } else {
+        showToast("Please select a XLSX or CSV file", "error");
+      }
+    });
+    addSchedulesDropzone.addEventListener("click", () => {
+      addSchedulesFile.click();
+    });
+  }
+
+  // File input for grades
+  addGradesFile?.addEventListener("change", () => {
+    const file = addGradesFile.files[0];
+    if (file) {
+      updateFileDisplay(file, "add", "grades");
+    }
+  });
+
+  // File input for schedules
+  addSchedulesFile?.addEventListener("change", () => {
+    const file = addSchedulesFile.files[0];
+    if (file) {
+      updateFileDisplay(file, "add", "schedules");
+    }
+  });
+
+  // Confirm add/remove for grades
+  confirmGradesBtn?.addEventListener("click", async () => {
+    const activeTab = document.querySelector("#manageGradesModal .tab-btn.active")?.dataset.tab;
+    const file = activeTab === "add" ? addGradesFile.files[0] : null;
+    if (activeTab === "add" && !file) return;
+
+    if (activeTab === "add") {
+      try {
+        await uploadFile(file, "grades");
+        closeManageModal(document.getElementById("manageGradesModal"));
+        loadUploadedFiles("grades");
+      } catch (err) {
+        showToast(err.message || "Upload failed", "error");
+        console.error(err);
+      }
+    }
+  });
+
+  // Confirm add/remove for schedules
+  confirmSchedulesBtn?.addEventListener("click", async () => {
+    const activeTab = document.querySelector("#manageSchedulesModal .tab-btn.active")?.dataset.tab;
+    const file = activeTab === "add" ? addSchedulesFile.files[0] : null;
+    if (activeTab === "add" && !file) return;
+
+    if (activeTab === "add") {
+      try {
+        await uploadFile(file, "schedules");
+        closeManageModal(document.getElementById("manageSchedulesModal"));
+        loadUploadedFiles("schedules");
+      } catch (err) {
+        showToast(err.message || "Upload failed", "error");
+        console.error(err);
+      }
+    }
+  });
+
+  // Shared file display update function
+  function updateFileDisplay(file, tab, type) {
+    const attachments = tab === "remove" ? null : (type === "grades" ? addGradesAttachments : addSchedulesAttachments);
+
+    if (!attachments) return;
+
+    // Determine file icon based on type
+    let fileIcon = "fa-file";
+    if (file.name.toLowerCase().endsWith(".xlsx")) {
+      fileIcon = "fa-file-excel";
+    } else if (file.name.toLowerCase().endsWith(".csv")) {
+      fileIcon = "fa-file-csv";
+    } else if (file.name.toLowerCase().endsWith(".pdf")) {
+      fileIcon = "fa-file-pdf";
+    }
+
+    attachments.innerHTML = `
+      <div class="attachment-item" style="display: flex; align-items: center; gap: 8px; padding: 8px; background: #f9fafb; border-radius: 6px; margin-top: 8px;">
+        <i class="fa-solid ${fileIcon}" style="color: #16a34a;"></i>
+        <span style="flex: 1; font-size: 14px;">${file.name}</span>
+        <span style="font-size: 12px; color: #6b7280;">${(file.size / 1024).toFixed(1)} KB</span>
+        <button type="button" class="remove-file" style="background: none; border: none; color: #dc2626; cursor: pointer; padding: 4px;" title="Remove file">
+          <i class="fa-solid fa-times"></i>
+        </button>
+      </div>
+    `;
+    const removeBtn = attachments.querySelector(".remove-file");
+    const fileInput = type === "grades" ? addGradesFile : addSchedulesFile;
+    const confirmBtn = type === "grades" ? confirmGradesBtn : confirmSchedulesBtn;
+    removeBtn?.addEventListener("click", () => {
+      fileInput.value = "";
+      attachments.innerHTML = "";
+      confirmBtn.disabled = true;
+    });
+    confirmBtn.disabled = false;
+  }
+
+  // ===== Show file preview function =====
+  async function showFilePreview(fileId) {
+    try {
+      const response = await fetch(`http://localhost:4000/api/import/preview/${fileId}`);
+      const result = await response.json();
+
+      if (!result.success) {
+        showToast(result.error || "Failed to load preview", "error");
+        return;
+      }
+
+      const { fileName, relPath, data, totalRows, truncated } = result;
+
+      // Build table HTML
+      let tableHtml = '<table class="preview-table"><thead><tr>';
+      if (data.length > 0) {
+        data[0].forEach((_, index) => {
+          tableHtml += `<th>Column ${index + 1}</th>`;
+        });
+      }
+      tableHtml += '</tr></thead><tbody>';
+      data.forEach(row => {
+        tableHtml += '<tr>';
+        row.forEach(cell => {
+          tableHtml += `<td>${escapeHtml(cell || '')}</td>`;
+        });
+        tableHtml += '</tr>';
+      });
+      tableHtml += '</tbody></table>';
+
+      if (truncated) {
+        tableHtml += `<p class="preview-note">Showing first 100 rows of ${totalRows} total rows.</p>`;
+      }
+
+      // Set modal content
+      document.getElementById('previewTableContainer').innerHTML = tableHtml;
+      document.getElementById('downloadPreviewBtn').onclick = () => {
+        window.open(`http://localhost:4000${relPath}`, '_blank');
+      };
+
+      // Show modal
+      document.getElementById('filePreviewModal').style.display = 'flex';
+    } catch (error) {
+      console.error('Preview error:', error);
+      showToast('Failed to load file preview', 'error');
+    }
+  }
+
+  // ===== Load uploaded files function =====
+  async function loadUploadedFiles(type) {
+    try {
+      const url = `http://localhost:4000/api/import/uploads/${type}`;
+      const res = await fetch(url, {
+        credentials: "include",
+        headers: { "X-Requested-With": "fetch" },
+      });
+
+      if (!res.ok) throw new Error(`Failed to fetch uploads: ${res.status}`);
+
+      const data = await res.json();
+      const uploads = Array.isArray(data.uploads) ? data.uploads : [];
+
+      const listEl = document.getElementById(`${type}FilesList`);
+      if (!listEl) return;
+
+      if (uploads.length === 0) {
+        listEl.innerHTML = '<p style="text-align: center; color: #6b7280; padding: 20px;">No files uploaded yet.</p>';
+        return;
+      }
+
+      const filesHtml = uploads.map(upload => {
+        let fileIcon = "fa-file-excel";
+        if (upload.originalName.toLowerCase().endsWith(".csv")) {
+          fileIcon = "fa-file-csv";
+        } else if (upload.originalName.toLowerCase().endsWith(".pdf")) {
+          fileIcon = "fa-file-pdf";
+        }
+        return `
+        <div class="file-item">
+          <i class="fa-solid ${fileIcon} file-icon"></i>
+          <div class="file-info">
+            <div class="file-name">${escapeHtml(upload.originalName)}</div>
+            <div class="file-meta">${(upload.size / 1024).toFixed(1)} KB • ${new Date(upload.createdAt).toLocaleDateString()}</div>
+          </div>
+          <div class="file-actions">
+            <button type="button" class="file-preview" data-file-id="${upload.id}" title="Preview file">
+              <i class="fa-solid fa-eye"></i>
+            </button>
+            <button type="button" class="file-delete" data-file-id="${upload.id}" title="Delete file">
+              <i class="fa-solid fa-trash"></i>
+            </button>
+          </div>
+        </div>
+      `}).join('');
+
+      listEl.innerHTML = filesHtml;
+
+      // Add event listeners
+      listEl.querySelectorAll('.file-preview').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          const fileId = e.currentTarget.dataset.fileId;
+          if (fileId) {
+            await showFilePreview(fileId);
+          }
+        });
+      });
+
+      listEl.querySelectorAll('.file-delete').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const fileId = e.currentTarget.dataset.fileId;
+          if (fileId) {
+            deleteModal.dataset.fileId = fileId;
+            deleteModal.style.display = "flex";
+          }
+        });
+      });
+
+    } catch (err) {
+      console.error('Error loading uploaded files:', err);
+      const listEl = document.getElementById(`${type}FilesList`);
+      if (listEl) {
+        listEl.innerHTML = '<p style="text-align: center; color: #dc2626; padding: 20px;">Error loading files.</p>';
+      }
+    }
+  }
+
+  // ===== Upload file function =====
+  async function uploadFile(file, type) {
+    const fd = new FormData();
+    fd.append("file", file);
+
+    const url = `http://localhost:4000/api/import/${type}`;
+    const res = await fetch(url, {
+      method: "POST",
+      body: fd,
+      credentials: "include",
+      headers: { "X-Requested-With": "fetch" },
+    });
+
+    const data = await res.json();
+    if (!res.ok || !data.success) {
+      throw new Error(data.error || `Upload failed (${res.status})`);
+    }
+
+    if (data.duplicate) {
+      showToast(`Duplicate detected. File already exists.`, "warning");
+    } else {
+      showToast(`File uploaded successfully.`, "success");
+    }
+  }
+
+  // ===== Custom Toasts =====
+  function showToast(message, type = "success") {
     const host = document.getElementById("toastHost");
-    if (!host) return alert(message); // safety fallback
+    if (!host) return alert(message);
+
     const toast = document.createElement("div");
     toast.className = `toast ${type}`;
     toast.innerHTML = `
-      <i class="fa-solid ${
-        type === "success"
-          ? "fa-circle-check"
-          : type === "warning"
-          ? "fa-triangle-exclamation"
-          : "fa-circle-xmark"
-      }"></i>
+      <i class="fa-solid ${type === "success" ? "fa-circle-check" : type === "warning" ? "fa-triangle-exclamation" : "fa-circle-xmark"}"></i>
       <span>${message}</span>
       <button type="button" class="toast-close" aria-label="Close">&times;</button>
     `;
     host.appendChild(toast);
+
     const timer = setTimeout(() => toast.remove(), 5000);
     toast.querySelector(".toast-close").addEventListener("click", () => {
       clearTimeout(timer);
@@ -192,185 +717,7 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
-  // ===== Admin Data Import → Node API wiring =====
-  (function wireAdminDataImportToNode() {
-    const API_BASE = "http://localhost:4000/api/import";
-
-    // utilities
-    function fmtBytes(n) {
-      if (!Number.isFinite(n)) return "";
-      const u = ["B", "KB", "MB", "GB"];
-      let i = 0;
-      while (n >= 1024 && i < u.length - 1) {
-        n /= 1024;
-        i++;
-      }
-      return `${n.toFixed(n > 10 || i === 0 ? 0 : 1)} ${u[i]}`;
-    }
-
-    function buildPill(host, file) {
-      host.innerHTML = "";
-      const pill = document.createElement("div");
-      pill.className = "attach-pill";
-      pill.innerHTML = `
-        <div class="attach-name" title="${file.name}">${file.name}</div>
-        <div class="attach-meta">
-          <span>${fmtBytes(file.size)}</span>
-          <span class="attach-pct">0%</span>
-          <button type="button" class="attach-remove" title="Remove">&times;</button>
-        </div>
-        <div class="attach-progress"><span style="width:0%"></span></div>
-      `;
-      host.appendChild(pill);
-      pill.querySelector(".attach-remove").addEventListener("click", () => {
-        host.innerHTML = "";
-        const form = host.closest("form");
-        const input = form?.querySelector(".file-input");
-        const btn = form?.querySelector(".btn-submit");
-        if (input) input.value = "";
-        if (btn) btn.setAttribute("disabled", "true");
-      });
-      return {
-        fill: pill.querySelector(".attach-progress > span"),
-        pct: pill.querySelector(".attach-pct"),
-        pill,
-      };
-    }
-
-    // Pre-upload read progress using FileReader (must reach 100% to enable Upload)
-    async function runPreReadProgress(file, progress, btn) {
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onprogress = (e) => {
-          if (e.lengthComputable) {
-            const p = Math.max(1, Math.round((e.loaded / e.total) * 100));
-            progress.fill.style.width = p + "%";
-            progress.pct.textContent = p + "%";
-          }
-        };
-        reader.onload = () => {
-          progress.fill.style.width = "100%";
-          progress.pct.textContent = "100%";
-          progress.pill.setAttribute("data-stage", "ready"); // visual state
-          btn?.removeAttribute("disabled");
-          resolve();
-        };
-        reader.onerror = () => {
-          reject(new Error("Failed to read file"));
-        };
-        // Read as array buffer to trigger progressive events
-        reader.readAsArrayBuffer(file);
-      });
-    }
-
-    document.querySelectorAll(".import-form").forEach((form) => {
-      const input = form.querySelector(".file-input");
-      const zone = form.querySelector(".dropzone");
-      const host = form.querySelector(".attachments");
-      const btn = form.querySelector(".btn-submit");
-      const type = form.getAttribute("data-import-type"); // 'grades' | 'schedules'
-      let inflight = false; // prevent double-submit
-
-      input?.addEventListener("change", async () => {
-        if (!input.files || !input.files[0]) {
-          host.innerHTML = "";
-          btn?.setAttribute("disabled", "true");
-          return;
-        }
-        const file = input.files[0];
-        const progress = buildPill(host, file);
-
-        // highlight dropzone
-        if (zone) {
-          zone.style.borderColor = "#FFD700";
-          zone.style.backgroundColor = "rgba(255, 215, 0, 0.1)";
-        }
-
-        // Pre-upload reader progress
-        btn?.setAttribute("disabled", "true");
-        try {
-          await runPreReadProgress(file, progress, btn);
-        } catch (err) {
-          console.error(err);
-          showToast("error", "Could not prepare file. Please try again.");
-          btn?.setAttribute("disabled", "true");
-        }
-      });
-
-      form.addEventListener("submit", (e) => {
-        e.preventDefault();
-        if (inflight) return; // block double-submits
-        const file = input?.files?.[0];
-        if (!file) return;
-
-        inflight = true;
-        btn?.setAttribute("disabled", "true");
-
-        // Reuse existing pill; switch to "uploading" stage
-        const pillEls = host.querySelector(".attach-pill");
-        const fill = pillEls?.querySelector(".attach-progress > span");
-        const pctEl = pillEls?.querySelector(".attach-pct");
-        pillEls?.setAttribute("data-stage", "uploading");
-
-        const xhr = new XMLHttpRequest();
-        xhr.open("POST", `${API_BASE}/${encodeURIComponent(type)}`, true);
-
-        xhr.upload.addEventListener("progress", (evt) => {
-          if (!evt.lengthComputable) return;
-          const p = Math.round((evt.loaded / evt.total) * 100);
-          if (fill) fill.style.width = p + "%";
-          if (pctEl) pctEl.textContent = p + "%";
-        });
-
-        xhr.onreadystatechange = function () {
-          if (xhr.readyState !== 4) return;
-
-          try {
-            const res = JSON.parse(xhr.responseText || "{}");
-            if (xhr.status === 200 && res.success) {
-              // Final visual state
-              if (fill) fill.style.width = "100%";
-              if (pctEl) pctEl.textContent = "100%";
-              pillEls?.setAttribute("data-stage", "done");
-
-              if (res.duplicate) {
-                showToast(
-                  "warning",
-                  `Duplicate detected. Reused existing upload.`
-                );
-              } else {
-                showToast(
-                  "success",
-                  `Uploaded ${res.originalName || file.name} successfully.`
-                );
-              }
-            } else {
-              pillEls?.setAttribute("data-stage", "error");
-              showToast(
-                "error",
-                res.error
-                  ? `Upload failed: ${res.error}`
-                  : `Upload failed (HTTP ${xhr.status})`
-              );
-            }
-          } catch {
-            pillEls?.setAttribute("data-stage", "error");
-            showToast("error", "Unexpected response from server.");
-          } finally {
-            inflight = false;
-            // Re-enable choose to allow a new file; keep Upload disabled until new pre-read completes
-            btn?.setAttribute("disabled", "true");
-          }
-        };
-
-        const fd = new FormData();
-        fd.append("file", file, file.name);
-        xhr.send(fd);
-      });
-    });
-  })();
-
-  // ===== Admin Search UI (unchanged) =====
+  // ===== Admin Search UI =====
   (function initAdminSearchUI() {
     const input = document.getElementById("globalSearch");
     if (!input) return;
@@ -583,9 +930,38 @@ document.addEventListener("DOMContentLoaded", function () {
 
     applyFilter("");
   })();
+
+  // ===== Preview modal event listeners =====
+  const filePreviewModalClose = document.getElementById("filePreviewModalClose");
+  const closePreviewBtn = document.getElementById("closePreviewBtn");
+  const filePreviewModal = document.getElementById("filePreviewModal");
+
+  filePreviewModalClose?.addEventListener("click", () => {
+    if (filePreviewModal) filePreviewModal.style.display = "none";
+  });
+  closePreviewBtn?.addEventListener("click", () => {
+    if (filePreviewModal) filePreviewModal.style.display = "none";
+  });
+  if (filePreviewModal) {
+    filePreviewModal.addEventListener("click", (e) => {
+      if (e.target === filePreviewModal) filePreviewModal.style.display = "none";
+    });
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && filePreviewModal.style.display === "flex") {
+        filePreviewModal.style.display = "none";
+      }
+    });
+  }
+
+  // ===== Utility function =====
+  function escapeHtml(s) {
+    const div = document.createElement('div');
+    div.textContent = s;
+    return div.innerHTML;
+  }
 });
 
-// === Inbox Dropdown (unchanged) =========================================
+// === Inbox Dropdown =====
 (function () {
   function computeHeaderOffset() {
     const header = document.querySelector("header");
@@ -699,4 +1075,6 @@ document.addEventListener("DOMContentLoaded", function () {
   } else {
     initInboxDropdown();
   }
+
+
 })();

@@ -169,53 +169,41 @@
 
       <!-- Scrollable Content Area -->
       <div class="content-scrollable">
-        <!-- Import Grades -->
-        <section class="import-section">
+        <!-- Left Column: Grades -->
+        <section class="import-section left-column">
           <div class="import-container">
             <h3>Import Grades</h3>
 
-            <form class="import-form" data-import-type="grades">
-              <div class="dropzone" data-zone="grades">
-                <p>Drop a XLSX/CSV file or</p>
-                <label class="browse-button">
-                  <i class="fa-solid fa-folder-open"></i> Browse files
-                  <input type="file" class="file-input" name="file" accept=".xlsx,.csv" />
-                </label>
+            <!-- List of Uploaded Grades Files -->
+            <div class="uploaded-files-list" data-type="grades">
+              <h4>Uploaded Files</h4>
+              <div id="gradesFilesList" class="files-list">
+                <!-- Files will be populated by JS -->
               </div>
+            </div>
 
-              <div class="attachments" aria-live="polite"></div>
-
-              <div class="import-actions">
-                <button type="submit" class="btn-submit" disabled>
-                  <i class="fa-solid fa-cloud-arrow-up"></i> Upload
-                </button>
-              </div>
-            </form>
+            <button type="button" class="manage-imports-btn" data-type="grades">
+              <i class="fa-solid fa-plus"></i> Manage Grades
+            </button>
           </div>
         </section>
 
-        <!-- Import Schedules -->
-        <section class="import-section">
+        <!-- Right Column: Schedules -->
+        <section class="import-section right-column">
           <div class="import-container">
             <h3>Import Schedules</h3>
 
-            <form class="import-form" data-import-type="schedules">
-              <div class="dropzone" data-zone="schedules">
-                <p>Drop a XLSX file or</p>
-                <label class="browse-button">
-                  <i class="fa-solid fa-folder-open"></i> Browse files
-                  <input type="file" class="file-input" name="file" accept=".xlsx" />
-                </label>
+            <!-- List of Uploaded Schedules Files -->
+            <div class="uploaded-files-list" data-type="schedules">
+              <h4>Uploaded Files</h4>
+              <div id="schedulesFilesList" class="files-list">
+                <!-- Files will be populated by JS -->
               </div>
+            </div>
 
-              <div class="attachments" aria-live="polite"></div>
-
-              <div class="import-actions">
-                <button type="submit" class="btn-submit" disabled>
-                  <i class="fa-solid fa-cloud-arrow-up"></i> Upload
-                </button>
-              </div>
-            </form>
+            <button type="button" class="manage-imports-btn" data-type="schedules">
+              <i class="fa-solid fa-plus"></i> Manage Schedules
+            </button>
           </div>
         </section>
       </div>
@@ -232,6 +220,136 @@
       <button id="navRightBtn" class="nav-button primary" type="button">
         Student List <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
       </button>
+    </div>
+  </div>
+
+  <!-- Manage Grades Modal -->
+  <div id="manageGradesModal" style="display: none;">
+    <div class="manage-modal-container">
+      <div class="manage-modal-header">
+        <h3 class="manage-modal-title">Manage Grades</h3>
+        <button id="manageGradesModalClose" type="button" aria-label="Close modal">
+          <i class="fa-solid fa-times"></i>
+        </button>
+      </div>
+
+      <!-- Tab Navigation -->
+      <div class="tab-nav">
+        <button class="tab-btn active" data-tab="add">Add Files</button>
+        <button class="tab-btn" data-tab="remove">Remove Files</button>
+      </div>
+
+      <!-- Add Files Tab -->
+      <div class="tab-content active" id="addGradesTab">
+        <div class="file-upload-area" data-zone="add-grades">
+          <i class="fa-solid fa-plus-circle"></i>
+          <h3>Add Grade Files</h3>
+          <p>Upload XLSX/CSV files to import grade data.</p>
+          <input type="file" id="addGradesFile" accept=".xlsx,.csv" />
+        </div>
+        <div class="attachments-list" id="addGradesAttachments"></div>
+      </div>
+
+      <!-- Remove Files Tab -->
+      <div class="tab-content" id="removeGradesTab">
+        <!-- Stored Files List -->
+        <div class="stored-files-section">
+          <h4>Currently Stored Grade Files</h4>
+          <div id="storedGradesList" class="stored-files-list">
+            <!-- Files will be populated by JavaScript -->
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button id="cancelGradesBtn" type="button">Cancel</button>
+        <button id="confirmGradesBtn" type="button" disabled>Add Files</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Manage Schedules Modal -->
+  <div id="manageSchedulesModal" style="display: none;">
+    <div class="manage-modal-container">
+      <div class="manage-modal-header">
+        <h3 class="manage-modal-title">Manage Schedules</h3>
+        <button id="manageSchedulesModalClose" type="button" aria-label="Close modal">
+          <i class="fa-solid fa-times"></i>
+        </button>
+      </div>
+
+      <!-- Tab Navigation -->
+      <div class="tab-nav">
+        <button class="tab-btn active" data-tab="add">Add Files</button>
+        <button class="tab-btn" data-tab="remove">Remove Files</button>
+      </div>
+
+      <!-- Add Files Tab -->
+      <div class="tab-content active" id="addSchedulesTab">
+        <div class="file-upload-area" data-zone="add-schedules">
+          <i class="fa-solid fa-plus-circle"></i>
+          <h3>Add Schedule Files</h3>
+          <p>Upload XLSX/CSV files to import schedule data.</p>
+          <input type="file" id="addSchedulesFile" accept=".xlsx,.csv" />
+        </div>
+        <div class="attachments-list" id="addSchedulesAttachments"></div>
+      </div>
+
+      <!-- Remove Files Tab -->
+      <div class="tab-content" id="removeSchedulesTab">
+        <!-- Stored Files List -->
+        <div class="stored-files-section">
+          <h4>Currently Stored Schedule Files</h4>
+          <div id="storedSchedulesList" class="stored-files-list">
+            <!-- Files will be populated by JavaScript -->
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button id="cancelSchedulesBtn" type="button">Cancel</button>
+        <button id="confirmSchedulesBtn" type="button" disabled>Add Files</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Delete Confirmation Modal -->
+  <div id="deleteConfirmationModal" style="display: none;">
+    <div class="delete-modal-container">
+      <div class="delete-modal-header">
+        <h3 class="delete-modal-title">Confirm Deletion</h3>
+        <button id="deleteModalClose" type="button" aria-label="Close modal">
+          <i class="fa-solid fa-times"></i>
+        </button>
+      </div>
+      <div class="delete-modal-body">
+        <p>Are you sure you want to delete this file? This will remove the file from the project.</p>
+      </div>
+      <div class="delete-modal-actions">
+        <button id="deleteCancelBtn" type="button">Cancel</button>
+        <button id="deleteConfirmBtn" type="button">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- File Preview Modal -->
+  <div id="filePreviewModal" style="display: none;">
+    <div class="preview-modal-container">
+      <div class="preview-modal-header">
+        <h3 class="preview-modal-title">File Preview</h3>
+        <button id="filePreviewModalClose" type="button" aria-label="Close modal">
+          <i class="fa-solid fa-times"></i>
+        </button>
+      </div>
+      <div class="preview-modal-body">
+        <div id="previewTableContainer" class="preview-table-container">
+          <!-- Table will be populated by JS -->
+        </div>
+      </div>
+      <div class="preview-modal-actions">
+        <button id="downloadPreviewBtn" type="button">Download File</button>
+        <button id="closePreviewBtn" type="button">Close</button>
+      </div>
     </div>
   </div>
 

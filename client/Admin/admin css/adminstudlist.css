@@ -1,97 +1,117 @@
 /* ========================================================================
-   Admin Student List — Card<->Table Height Sync (2025-09-15)
-   Matches Student Reports behavior while preserving Admin visuals.
-   - Card height follows the inner scroller (no forced stretch)
-   - Single inner scroller (.table-scroll) w/ sticky thead & native resize
-   - Custom resize handle toggles .is-resized so scroller can fill card
+   Admin Student List — Modern, Range-based Responsiveness (2025-09-01)
+   Single resize handle (blue container). Table follows height.
+   Phones ≈10 rows, Tablets ≈20 rows; desktop static with no row cap.
+   Horizontal scroll isolated to table on sub-desktop. Footer always visible.
+   Spacing knobs: --table-top-gap, --table-bottom-gap, --footer-top-margin,
+                   --content-bpad-extra
    ======================================================================== */
 
 :root {
-  /* Layout budgets / shared knobs */
-  --bottom-nav-h: 96px;
-  --footer-min-h: 56px; /* one-line footer */
-  --content-vpad: clamp(12px, 2vw, 24px);
-  --content-bpad-extra: 6px;
+  /* Brand */
+  --curric-blue: #0c2d52;
+  --curric-gold: #ffd700;
+  --curric-border-blue: #0047ab;
+
+  /* Frame / structural paddings */
+  --card-radius: 16px;
+  --content-vpad: clamp(12px, 2vw, 24px); /* content top padding */
+  --card-vpad: clamp(10px, 1.6vw, 12px); /* card top/bottom padding */
+  --card-gap: 8px; /* gap between header & table */
+
+  /* === SPACING KNOBS (adjust these) === */
+  --table-top-gap: 16px; /* ↑ space ABOVE the table container inside the card */
+  --table-bottom-gap: 2px; /* ↓ fine space between table container & footer */
+  --footer-top-margin: 4px; /* ↓ margin above footer row */
+  --content-bpad-extra: calc(var(--bottom-nav-h) + 4px); /* ↓ extra padding above bottom nav */
 
   /* Table */
   --table-font: 14px;
-  --table-min-w: 1120px; /* force X-overflow on narrow */
+  --table-min-w: 1040px; /* fixed for all views with scrolling (sum of column px widths: 120+300+80+80+200+140+120) */
 
-  /* Card */
-  --card-radius: 16px;
-  --card-gap: 10px;
-  --card-vpad: clamp(10px, 1.6vw, 12px);
+  /* Manual-resize controls (container only) */
+  --table-min-h: calc(var(--head-h) + var(--row-h) * 10); /* minimum inner table area height for 10 rows */
+  --resize-handle: 12px; /* visual affordance size on card corner */
 
-  /* Row sizing (mobile-first; overridden by ranges) */
-  --row-h: 40px;
-  --head-h: 44px;
-  --rows-visible: 14;
+  /* Layout budgets */
+  --bottom-nav-h: 96px; /* global bottom nav height */
+  --footer-min-h: 56px; /* one-line footer height */
+  --header-estimate: 200px; /* title + filters total height (conservative) */
 
-  /* Table area spacing within card */
-  --table-top-gap: 14px;
-  --table-bottom-gap: 2px;
+  /* Row sizing & caps (mobile-first; overridden per range) */
+  --row-h: clamp(36px, 4.5vw, 44px);
+  --head-h: clamp(40px, 5vw, 48px);
+  --rows-visible: 10; /* phones default ≈ 10 rows */
 
-  /* Student List column sizing (works w/ table-layout:fixed) */
-  --studlist-col-name-px: 420px;
-  --studlist-col-year-px: 110px;
-  --studlist-col-dept-px: 320px;
-  --studlist-col-status-px: 270px;
-
-  /* Desktop fill spread */
-  --studlist-col-name-pc: 46%;
-  --studlist-col-year-pc: 12%;
-  --studlist-col-dept-pc: 22%;
-  --studlist-col-status-pc: 20%;
+  /* Student List column sizing - All views (px, fixed for consistent widths with scrolling) */
+  --studlist-col-num-px: 120px; /* Student Number: short IDs */
+  --studlist-col-name-px: 300px; /* Student Name: full names up to ~25 chars */
+  --studlist-col-year-px: 80px; /* Year Level: e.g., "1st Year" */
+  --studlist-col-sem-px: 80px; /* Semester: e.g., "1st Sem" */
+  --studlist-col-dept-px: 200px; /* Department: e.g., "Computer Science" */
+  --studlist-col-status-px: 140px; /* Assessment Status: e.g., "Pending" or "Complete" */
+  --studlist-col-gwa-px: 120px; /* Latest GWA: numeric value */
 }
 
-/* -------- Page scaffold -------- */
+/* =========================================================================
+    PAGE SCAFFOLD (mobile-first)
+    ========================================================================= */
 .admin-studentlist {
   min-height: 100svh;
   display: flex;
   flex-direction: column;
-  overflow-x: hidden; /* protect bottom nav alignment */
-  overflow-y: auto;
+
+  overflow-x: hidden; /* NEVER allow page-level X scroll (protect bottom nav) */
+  overflow-y: auto; /* sub-desktop: allow page to scroll if needed */
 }
-.admin-studentlist main {
-  padding-bottom: calc(var(--bottom-nav-h) + env(safe-area-inset-bottom));
-}
+
 .admin-studentlist .content-scrollable {
   padding: var(--content-vpad);
-  padding-bottom: calc(
-    var(--content-bpad-extra) + var(--bottom-nav-h) +
-      env(safe-area-inset-bottom)
-  );
+  /* Bottom padding = extra gap + safe area (bottom nav accounted for in --content-bpad-extra) */
+  padding-bottom: calc(var(--content-bpad-extra) + env(safe-area-inset-bottom));
   display: flex;
   flex-direction: column;
   gap: 12px;
   flex: 1 1 auto;
-  min-height: 0;
-  overflow: visible;
+  min-height: 0; /* critical for inner flex scrollers */
+  overflow-x: hidden; /* isolate X scroll to .table-scroll only */
+  overflow-y: visible; /* page may scroll on phones/tablets */
 }
 
 /* =======================================================================
-   BLUE CARD — now follows its contents (no artificial min/max stretch)
+   BLUE CARD — allow overflow so dropdowns can float over the table
    ======================================================================= */
 .admin-studentlist .curric-card {
   position: relative;
   background: #fff;
-  border: 2px solid #0047ab;
+  border: 2px solid var(--curric-border-blue);
   border-radius: var(--card-radius);
   padding: var(--card-vpad);
   display: flex;
   flex-direction: column;
   gap: var(--card-gap);
 
-  /* KEY: let content (the scroller) drive height */
-  flex: 0 0 auto;
+  flex: 1 1 auto;
   min-height: 0;
-  max-height: none;
-  height: auto;
+  overflow: visible; /* IMPORTANT: let menus render above the table */
 
-  overflow: hidden; /* keep rounded corners as scroller moves */
+  /* Safe minimum: header + top gap + minimum table area + bottom gap + vertical paddings */
+  min-height: calc(
+    var(--header-estimate) + var(--table-top-gap) + var(--table-min-h) +
+      var(--table-bottom-gap) + (var(--card-vpad) + var(--card-vpad))
+  );
+
+  /* Viewport-aware cap so footer stays visible across sizes (incl. 864/900) */
+  max-height: calc(
+    100svh - var(--bottom-nav-h) - var(--footer-min-h) -
+      var(--content-bpad-extra) - var(--content-vpad)
+  );
+
+  z-index: 10;
 }
-
 .admin-studentlist .curric-card-header {
+  position: relative;
+  z-index: 11; /* menus live here */
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -105,16 +125,16 @@
   margin: 0;
 }
 
-/* Filters rail (scrollable on narrow) */
+/* Filters rail (responsive with wrap) */
 .admin-studentlist .filters-rail {
-  display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: max-content;
+  position: relative;
+  z-index: 12;
+  display: flex;
+  flex-wrap: wrap;
   gap: 16px;
   overflow-x: auto;
-  overflow-y: hidden;
+  overflow-y: visible;
   -webkit-overflow-scrolling: touch;
-  touch-action: pan-x pinch-zoom;
   overscroll-behavior-x: contain;
   scrollbar-width: thin;
   padding: 2px 10px 6px;
@@ -122,73 +142,235 @@
   scroll-snap-type: x proximity;
 }
 .admin-studentlist .filter-group {
-  scroll-snap-align: start;
+  position: relative; /* anchor for menus */
   min-width: 0;
   white-space: nowrap;
-}
-.admin-studentlist .filters-rail::-webkit-scrollbar {
-  height: 6px;
-}
-.admin-studentlist .filters-rail::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.15);
-  border-radius: 999px;
+  scroll-snap-align: start;
 }
 .admin-studentlist .filter-group label {
+  display: block;
+  margin-bottom: 6px;
   font-size: clamp(12px, 1.3vw, 14px);
   color: #555;
   font-weight: 600;
 }
+
+/* Native Name <select> (kept hidden by JS but style is harmless) */
 .admin-studentlist .filter-group select {
-  width: clamp(140px, 18vw, 180px);
+  width: clamp(140px, 18vw, 200px);
   padding: 8px 12px;
   border: 1px solid #ddd;
   border-radius: 6px;
   background: #fff;
   font-size: clamp(12.5px, 1.5vw, 14px);
   line-height: 1.2;
+  height: 40px;
+  box-sizing: border-box;
+}
+
+/* Multi-select trigger button — styled like a native <select> */
+.admin-studentlist .ms-button,
+.admin-studentlist .ns-button {
+  width: clamp(140px, 18vw, 200px);
+  height: 40px;
+  padding: 8px 34px 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  background: #fff;
+  font-size: clamp(12.5px, 1.5vw, 14px);
+  line-height: 1.2;
+  text-align: left;
+  cursor: pointer;
+  position: relative;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.admin-studentlist .ms-button::after,
+.admin-studentlist .ns-button::after {
+  content: "\f107";
+  font: normal 16px/1 "Font Awesome 6 Free";
+  font-weight: 900;
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: #444;
+}
+.admin-studentlist .ms-button[aria-expanded="true"],
+.admin-studentlist .ns-button[aria-expanded="true"] {
+  outline: 2px solid rgba(0, 71, 171, 0.25);
+}
+
+/* Dropdown menus (multi-select + name-select) */
+.admin-studentlist .ms-menu,
+.admin-studentlist .ns-menu {
+  position: absolute;
+  left: 0;
+  top: calc(100% + 6px);
+  min-width: clamp(240px, 22vw, 280px);
+  max-width: 360px;
+  background: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.2);
+  padding: 8px;
+  z-index: 9999; /* sits over sticky table header */
+  max-height: 320px;
+  overflow: auto;
+}
+
+/* Multi-select content */
+.admin-studentlist .ms-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 2px 8px;
+  border-bottom: 1px dashed #e5e7eb;
+  margin-bottom: 6px;
+}
+.admin-studentlist .ms-actions button {
+  font-size: 12px;
+  font-weight: 700;
+  border: none;
+  background: transparent;
+  color: #0047ab;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 6px;
+}
+.admin-studentlist .ms-actions button:hover {
+  background: rgba(0, 71, 171, 0.08);
+}
+.admin-studentlist .ms-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 4px;
+  font-size: 14px;
+  cursor: pointer;
+}
+.admin-studentlist .ms-option input {
+  width: 16px;
+  height: 16px;
+}
+
+/* Name-select (A–Z + search) content */
+.admin-studentlist .ns-search {
+  display: grid;
+  grid-template-columns: 20px 1fr 30px;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 6px 8px;
+  border-bottom: 1px dashed #e5e7eb;
+  margin-bottom: 6px;
+}
+.admin-studentlist .ns-search input {
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  height: 34px;
+  padding: 6px 10px;
+  font-size: 14px;
+}
+.admin-studentlist .ns-clear-btn {
+  background: none;
+  border: none;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+}
+.admin-studentlist .ns-clear-btn:hover {
+  background: #e5e7eb;
+  color: #374151;
+}
+.admin-studentlist .ns-grid {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 6px;
+}
+.admin-studentlist .ns-letter {
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  border-radius: 6px;
+  padding: 6px 0;
+  font-size: 13px;
+  cursor: pointer;
+}
+.admin-studentlist .ns-letter.active,
+.admin-studentlist .ns-letter:hover {
+  background: #0c2d52;
+  color: #fff;
+  border-color: #0c2d52;
+}
+
+/* Apply button (filters) */
+.admin-studentlist .apply-btn {
+  height: 40px;
+  padding: 8px 18px;
+  border-radius: 8px;
+  border: 1px solid #0c2d52;
+  background: #0c2d52;
+  color: #fff;
+  font-weight: 800;
+  cursor: pointer;
+}
+.admin-studentlist .apply-btn:hover {
+  filter: brightness(1.05);
 }
 
 /* =======================================================================
-   The ONLY scroller (table area) — native vertical resize enabled
-   Card adds .is-resized so this scroller can use max-height:100%
+   Table area: single scroller with sticky thead + native resize
    ======================================================================= */
 .admin-studentlist .table-scroll {
+  position: relative;
+  z-index: 0; /* below header/menus */
   border: 1px solid #d1d5db;
   border-radius: 10px;
   background: #fff;
-
   flex: 1 1 auto;
-  min-height: 140px;
+  min-height: var(--table-min-h);
   max-width: 100%;
   margin-top: var(--table-top-gap);
   margin-bottom: var(--table-bottom-gap);
-
-  overflow-y: auto;
-  overflow-x: auto; /* sub-desktop */
+  overflow: auto;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
   scrollbar-gutter: stable both-edges;
   touch-action: pan-x pan-y;
-
-  /* default visible rows cap (scroller controls height) */
-  max-height: calc(var(--head-h) + var(--row-h) * var(--rows-visible));
-
-  /* 🔑 native corner resize — table will grow/shrink WITH the card */
+  /* Default caps (phones/tablets): ~10 rows + short-height guard */
+  max-height: min(
+    calc(var(--head-h) + var(--row-h) * var(--rows-visible)),
+    calc(
+      100svh - var(--bottom-nav-h) - var(--footer-min-h) -
+        var(--content-bpad-extra) - var(--content-vpad) -
+        (var(--card-vpad) + var(--card-vpad)) - var(--card-gap) -
+        var(--table-top-gap) - var(--header-estimate)
+    )
+  );
   resize: vertical;
 }
 .admin-studentlist .curric-card.is-resized .table-scroll {
-  max-height: 100%;
+  max-height: none;
+}
+.admin-studentlist .curric-card.is-resized {
+  max-height: none;
 }
 
-/* =======================================================================
-   Table visuals (sticky thead; min-width for X-scroll on sub-desktop)
-   ======================================================================= */
+/* Table visuals */
 .admin-studentlist .student-table {
   width: 100%;
   min-width: var(--table-min-w);
   border-collapse: separate;
   border-spacing: 0;
-  table-layout: fixed; /* lets our width knobs work predictably */
+  table-layout: fixed;
   font-size: var(--table-font);
   word-break: break-word;
   overflow-wrap: anywhere;
@@ -196,7 +378,7 @@
 .admin-studentlist .student-table thead {
   position: sticky;
   top: 0;
-  z-index: 10;
+  z-index: 3; /* sticky within table-scroll, above body rows */
   background: #0c2d52;
   color: #ffd700;
 }
@@ -225,24 +407,45 @@
   transition: background-color 0.18s ease;
 }
 
-/* Column widths (sub-desktop = px) */
 .admin-studentlist .student-table th:nth-child(1),
 .admin-studentlist .student-table td:nth-child(1) {
-  width: var(--studlist-col-name-px);
-  white-space: normal; /* allow names to wrap */
+  width: var(--studlist-col-num-px);
+  text-align: center;
 }
 .admin-studentlist .student-table th:nth-child(2),
 .admin-studentlist .student-table td:nth-child(2) {
-  width: var(--studlist-col-year-px);
-  text-align: center;
+  width: var(--studlist-col-name-px);
+  white-space: normal;
 }
 .admin-studentlist .student-table th:nth-child(3),
 .admin-studentlist .student-table td:nth-child(3) {
-  width: var(--studlist-col-dept-px);
+  width: var(--studlist-col-year-px);
+  text-align: center;
 }
 .admin-studentlist .student-table th:nth-child(4),
 .admin-studentlist .student-table td:nth-child(4) {
+  width: var(--studlist-col-sem-px);
+  text-align: center;
+}
+.admin-studentlist .student-table th:nth-child(5),
+.admin-studentlist .student-table td:nth-child(5) {
+  width: var(--studlist-col-dept-px);
+}
+.admin-studentlist .student-table th:nth-child(6),
+.admin-studentlist .student-table td:nth-child(6) {
   width: var(--studlist-col-status-px);
+}
+.admin-studentlist .student-table th:nth-child(7),
+.admin-studentlist .student-table td:nth-child(7) {
+  width: var(--studlist-col-gwa-px);
+  text-align: center;
+}
+
+.admin-studentlist .student-table tr.placeholder td {
+  color: transparent;
+}
+.admin-studentlist .student-table tr.placeholder:hover td {
+  background: transparent;
 }
 
 /* Scroller-only scrollbars */
@@ -261,15 +464,17 @@
   background: rgba(0, 71, 171, 0.5);
 }
 
-/* Custom resize handle (same look as curriculum/reports) */
+/* Single, subtle resize affordance (we’ll attach pointer events in JS) */
 .admin-studentlist .curric-resize-handle {
   position: relative;
   height: 14px;
-  margin-top: 6px;
+  margin-top: 6px; /* tiny space below table area inside the card */
   cursor: ns-resize;
-  touch-action: none;
+  touch-action: none; /* allow vertical drag on touch */
   user-select: none;
   border-radius: 8px;
+
+  /* visual “grip” */
   background: radial-gradient(
         circle at 50% 6px,
         rgba(0, 0, 0, 0.18) 0 2px,
@@ -282,7 +487,6 @@
         transparent 1px
       )
       16px 0/16px 8px repeat-x;
-  z-index: 3;
 }
 
 /* Footer BELOW the card */
@@ -312,26 +516,242 @@
   font-weight: 800;
   color: #555;
 }
-.admin-studentlist .update-button {
-  background: #ffd700;
-  color: #0c2d52;
-  padding: 8px 20px;
+.admin-studentlist .update-button,
+.admin-studentlist .export-button {
+  display: inline-block;
+  padding: 12px 24px;
   border-radius: 20px;
   font-weight: 700;
   border: none;
   cursor: pointer;
   transition: 0.2s;
   white-space: nowrap;
+  position: relative;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+.admin-studentlist .update-records-dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+.admin-studentlist .update-records-dropdown .update-button::after {
+  content: "\f107";
+  font: normal 16px/1 "Font Awesome 6 Free";
+  font-weight: 900;
+  margin-left: 8px;
+  transition: transform 0.2s ease;
+}
+
+.admin-studentlist .update-records-dropdown[aria-expanded="true"] .update-button::after {
+  transform: rotate(180deg);
+}
+
+.admin-studentlist .dropdown-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 8px 0;
+  min-width: 160px;
+  z-index: 1000;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-8px);
+  transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s ease;
+}
+
+.admin-studentlist .update-records-dropdown[aria-expanded="true"] .dropdown-menu {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.admin-studentlist .dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 16px;
+  border: none;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  font-size: 14px;
+  color: #0c2d52;
+  white-space: nowrap;
+  transition: background-color 0.2s ease;
+}
+
+.admin-studentlist .dropdown-item:hover {
+  background: #f8fafc;
+}
+
+.admin-studentlist .dropdown-item i {
+  width: 16px;
+  text-align: center;
+  color: #666;
+}
+.admin-studentlist .update-button {
+  background: #ffd700;
+  color: #0c2d52;
+  pointer-events: auto !important;
+  cursor: pointer !important;
+  touch-action: manipulation;
+  -webkit-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
+  user-select: none !important;
 }
 .admin-studentlist .update-button:hover {
   background: #ffcc00;
 }
+.admin-studentlist .update-button:disabled {
+  cursor: not-allowed !important;
+  opacity: 0.6;
+}
 
-/* X-Scroll hint overlay (reuses existing markup) */
+.admin-studentlist .export-button {
+  background: #0c2d52;
+  color: #fff;
+}
+.admin-studentlist .export-button:hover {
+  filter: brightness(1.05);
+}
+
+/* =========================================================================
+   RANGE-BASED RESPONSIVENESS: row caps + resize controls
+   Phones: 14 rows, vertical resize enabled
+   Tablets: 20 rows, resize enabled
+   Desktop: no row cap, resize disabled (static fill)
+   ========================================================================= */
+
+/* Tablets: more rows visible */
+@media (min-width: 768px) and (max-width: 1279px) {
+  :root {
+    --rows-visible: 20; /* tablets ≈ 20 rows */
+  }
+}
+
+/* Desktop: no row cap, disable resize */
+@media (min-width: 1280px) {
+  :root {
+    --rows-visible: 9999; /* no cap on desktop */
+  }
+
+  .admin-studentlist .table-scroll {
+    resize: none; /* disable resize on desktop */
+  }
+}
+
+/* ===== Responsive adjustments for filters ===== */
+@media (max-width: 1024px) {
+  .admin-studentlist .filters-rail {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    grid-template-rows: auto auto;
+    gap: 10px;
+    overflow-x: visible;
+    padding: 2px 0 6px;
+    z-index: 12; /* ensure rail z-index in grid */
+  }
+
+  .admin-studentlist .ms-menu,
+  .admin-studentlist .ns-menu {
+    z-index: 9999; /* maintain high z for menus in responsive */
+  }
+
+  .admin-studentlist .table-scroll {
+    z-index: 0; /* ensure table below in responsive */
+  }
+}
+@media (max-width: 768px) {
+  .admin-studentlist .filters-rail {
+    gap: 8px;
+    grid-template-columns: 1fr;
+    grid-template-rows: repeat(auto-fit, auto);
+  }
+  .admin-studentlist .ms-button,
+  .admin-studentlist .ns-button,
+  .admin-studentlist .filter-group select {
+    width: 100%;
+    min-width: unset;
+    font-size: 14px;
+    padding: 6px 10px;
+    height: 36px;
+  }
+  .admin-studentlist .filter-group label {
+    font-size: 12px;
+  }
+}
+
+/* ===== Desktop: allow horizontal scroll for complete columns ===== */
+@media (min-width: 1280px) {
+  .admin-studentlist .content-scrollable {
+    overflow-x: hidden;
+  }
+  .admin-studentlist .table-scroll {
+    overflow-x: auto;
+  }
+  .admin-studentlist .student-table {
+    min-width: var(--table-min-w);
+  }
+}
+
+/* ===== Desktop: responsive table to fit all columns ===== */
+@media (min-width: 1280px) {
+  .admin-studentlist .student-table {
+    table-layout: auto;
+    min-width: 100%;
+  }
+  .admin-studentlist .student-table th:nth-child(1),
+  .admin-studentlist .student-table td:nth-child(1) {
+    width: 11.5%;
+    min-width: var(--studlist-col-num-px);
+  }
+  .admin-studentlist .student-table th:nth-child(2),
+  .admin-studentlist .student-table td:nth-child(2) {
+    width: 28.8%;
+    min-width: var(--studlist-col-name-px);
+  }
+  .admin-studentlist .student-table th:nth-child(3),
+  .admin-studentlist .student-table td:nth-child(3) {
+    width: 7.7%;
+    min-width: var(--studlist-col-year-px);
+  }
+  .admin-studentlist .student-table th:nth-child(4),
+  .admin-studentlist .student-table td:nth-child(4) {
+    width: 7.7%;
+    min-width: var(--studlist-col-sem-px);
+  }
+  .admin-studentlist .student-table th:nth-child(5),
+  .admin-studentlist .student-table td:nth-child(5) {
+    width: 19.2%;
+    min-width: var(--studlist-col-dept-px);
+  }
+  .admin-studentlist .student-table th:nth-child(6),
+  .admin-studentlist .student-table td:nth-child(6) {
+    width: 13.5%;
+    min-width: var(--studlist-col-status-px);
+  }
+  .admin-studentlist .student-table th:nth-child(7),
+  .admin-studentlist .student-table td:nth-child(7) {
+    width: 11.5%;
+    min-width: var(--studlist-col-gwa-px);
+  }
+}
+
+/* Horizontal scroll hint overlay (matching curriculum module) - add <div id="studScrollHint" class="scroll-hint-overlay"><div class="scroll-hint">Swipe left/right to view more columns <b>↔</b></div></div> to HTML and toggle via JS */
 .admin-studentlist .scroll-hint-overlay {
   position: fixed;
   inset: 0;
-  display: none;
+  display: none; /* JS toggles via [data-open="1"] */
   align-items: center;
   justify-content: center;
   z-index: 9999;
@@ -352,244 +772,549 @@
   max-width: 86vw;
 }
 .admin-studentlist .scroll-hint b {
-  color: #ffd700;
+  color: var(--curric-gold);
 }
 
-/* ===== Desktop: no page X-scroll, table fills container width ===== */
-@media (min-width: 1280px) {
-  .admin-studentlist {
-    overflow-x: hidden;
-  }
-  .admin-studentlist .content-scrollable {
-    overflow-x: hidden;
-  }
-
-  .admin-studentlist .table-scroll {
-    overflow-x: hidden;
-  }
-  .admin-studentlist .student-table {
-    min-width: 100%;
-  }
-
-  /* switch to percentages so columns fill nicely */
-  .admin-studentlist .student-table th:nth-child(1),
-  .admin-studentlist .student-table td:nth-child(1) {
-    width: var(--studlist-col-name-pc);
-  }
-  .admin-studentlist .student-table th:nth-child(2),
-  .admin-studentlist .student-table td:nth-child(2) {
-    width: var(--studlist-col-year-pc);
-  }
-  .admin-studentlist .student-table th:nth-child(3),
-  .admin-studentlist .student-table td:nth-child(3) {
-    width: var(--studlist-col-dept-pc);
-  }
-  .admin-studentlist .student-table th:nth-child(4),
-  .admin-studentlist .student-table td:nth-child(4) {
-    width: var(--studlist-col-status-pc);
-  }
+/* ===== Lightweight toast ===== */
+.toast {
+  position: fixed;
+  right: 18px;
+  bottom: calc(var(--bottom-nav-h) + 14px);
+  background: #0c2d52;
+  color: #fff;
+  padding: 10px 14px;
+  border-radius: 10px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+  font-size: 14px;
+  z-index: 5000;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+.toast.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+.toast.ok {
+  background: #0c7a2e;
+}
+.toast.warn {
+  background: #b45309;
+}
+.toast.err {
+  background: #991b1b;
 }
 
-/* Tighten rows at ranges (same rhythm as reports) */
-@media (min-width: 600px) {
-  :root {
-    --row-h: 42px;
-    --rows-visible: 12;
-  }
-}
-@media (min-width: 768px) {
-  :root {
-    --row-h: 44px;
-    --head-h: 44px;
-    --rows-visible: 16;
-  }
-  .admin-studentlist .student-table th,
-  .admin-studentlist .student-table td {
-    padding: 10px 12px;
-  }
-}
-@media (min-width: 1440px) {
-  .admin-studentlist .content-scrollable {
-    padding: clamp(20px, 2vw, 32px);
-  }
-}
-
-/* ===================== Sidebar + BottomNav alignment (unchanged) ===================== */
-/* Keep your existing sidebar/bottomNav alignment overrides exactly as-is.
-   If you removed them earlier, paste the known-good block you use system-wide. */
-
-/* =======================================================================
-   Admin Student List — Sidebar (no push) + Icon Alignment + BottomNav snap
-   Replace the previous override with this block.
-   - Content flexes; sidebar never gets pushed
-   - Profile icon aligns with brand/logo icon (“One Enrollment”)
-   - Bottom nav hugs sidebar edge (expanded & collapsed)
-   ======================================================================= */
-
-.admin-studentlist {
-  /* Sidebar constants (match your app) */
-  --sidebar-w: 260px;
-  --sidebar-collapsed-w: 72px;
-
-  /* Visual rhythm for rows */
-  --sidebar-pad-x: 18px; /* left/right padding on rows */
-  --sidebar-row-h: 52px; /* min-height per row */
-  --sidebar-icon-col: 44px; /* fixed icon column width */
-}
-
-/* 1) Layout: sidebar fixed; content flexible (prevents page widening) */
-.admin-studentlist .global-container {
-  display: flex !important;
-  align-items: stretch;
-  max-width: 100% !important;
-  overflow-x: hidden !important; /* clamp to viewport; no push */
-}
-.admin-studentlist .global-container > .sidebar {
-  flex: 0 0 var(--sidebar-w) !important;
-  width: var(--sidebar-w) !important;
-  min-width: var(--sidebar-w) !important;
-  display: flex;
-  flex-direction: column;
-}
-.admin-studentlist .global-container > .sidebar.collapsed {
-  flex-basis: var(--sidebar-collapsed-w) !important;
-  width: var(--sidebar-collapsed-w) !important;
-  min-width: var(--sidebar-collapsed-w) !important;
-}
-.admin-studentlist .global-container > *:not(.sidebar) {
-  flex: 1 1 auto !important;
-  min-width: 0 !important; /* 🔑 allows shrinking instead of pushing */
-  overflow-x: hidden !important; /* nothing widens the page */
-}
-.admin-studentlist main {
-  flex: 1 1 auto;
-  min-width: 0; /* keep tables from pushing layout */
-  overflow-x: visible; /* allow dropdowns/overlays */
-}
-
-/* 2) Top brand row (“One Enrollment”) — define the icon column */
-.admin-studentlist .sidebar .brand,
-.admin-studentlist .sidebar .brand-row,
-.admin-studentlist .sidebar .app-title-row,
-.admin-studentlist .sidebar .top-badge,
-.admin-studentlist .sidebar .org-switch {
-  display: flex;
+/* ===== Manage Records Modal ===== */
+#manageRecordsModal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: none;
   align-items: center;
-  gap: 12px;
-  padding: 8px var(--sidebar-pad-x);
-  min-height: var(--sidebar-row-h);
-  box-sizing: border-box;
-}
-.admin-studentlist .sidebar .brand > *:first-child,
-.admin-studentlist .sidebar .brand-row > *:first-child,
-.admin-studentlist .sidebar .app-title-row > *:first-child,
-.admin-studentlist .sidebar .top-badge > *:first-child,
-.admin-studentlist .sidebar .org-switch > *:first-child {
-  width: var(--sidebar-icon-col);
-  min-width: var(--sidebar-icon-col);
-  display: grid;
-  place-items: center;
-}
-
-/* 3) Profile/Avatar row — align exactly with the brand icon column */
-.admin-studentlist .sidebar .sidebar-user {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 8px var(--sidebar-pad-x);
-  min-height: var(--sidebar-row-h);
-  box-sizing: border-box;
-}
-.admin-studentlist .sidebar .sidebar-user .avatar {
-  width: var(--sidebar-icon-col);
-  min-width: var(--sidebar-icon-col);
-  height: var(--sidebar-icon-col);
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
-}
-
-/* Collapsed profile row: center the avatar; hide text */
-.admin-studentlist .sidebar.collapsed .sidebar-user {
   justify-content: center;
-  padding-left: 0;
-  padding-right: 0;
+  z-index: 7000;
+  padding: 20px;
 }
-.admin-studentlist .sidebar.collapsed .sidebar-user .user-text {
-  display: none !important;
+#manageRecordsModal.show {
+  display: flex;
 }
 
-/* 4) Nav/menu items — same column alignment as brand/profile */
-.admin-studentlist .sidebar .menu,
-.admin-studentlist .sidebar nav {
+.manage-modal-container {
+  background: #fff;
+  width: min(600px, 95vw);
+  max-height: 90vh;
+  border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
   display: flex;
   flex-direction: column;
-  gap: 2px;
 }
-.admin-studentlist .sidebar .menu .nav-item,
-.admin-studentlist .sidebar nav a,
-.admin-studentlist .sidebar nav button {
+
+.manage-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid #e5e7eb;
+  background: #f8fafc;
+}
+
+.manage-modal-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #0c2d52;
+  margin: 0;
+}
+
+#manageModalClose {
+  background: none;
+  border: none;
+  font-size: 20px;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 8px var(--sidebar-pad-x);
-  min-height: var(--sidebar-row-h);
-  box-sizing: border-box;
+  justify-content: center;
 }
-.admin-studentlist .sidebar .menu .nav-item i,
-.admin-studentlist .sidebar nav a i,
-.admin-studentlist .sidebar nav button i {
-  width: var(--sidebar-icon-col);
-  min-width: var(--sidebar-icon-col);
+#manageModalClose:hover {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+.manage-modal-tabs {
+  display: flex;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.tab-btn {
+  flex: 1;
+  padding: 12px 16px;
+  background: none;
+  border: none;
+  font-size: 14px;
+  font-weight: 600;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-bottom: 2px solid transparent;
+}
+.tab-btn.active {
+  color: #0c2d52;
+  border-bottom-color: #0c2d52;
+  background: #f8fafc;
+}
+.tab-btn:hover:not(.active) {
+  background: #f1f5f9;
+}
+
+.tab-content {
+  display: none;
+  padding: 20px;
+  flex: 1;
+  overflow-y: auto;
+}
+.tab-content.active {
+  display: block;
+}
+
+.file-upload-area {
+  border: 2px dashed #d1d5db;
+  border-radius: 8px;
+  padding: 40px 20px;
+  text-align: center;
+  background: #fafbfc;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  min-height: 120px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+.file-upload-area:hover,
+.file-upload-area.dragover {
+  border-color: #0c2d52;
+  background: #f0f9ff;
+}
+.file-upload-area i {
+  font-size: 48px;
+  color: #9ca3af;
+}
+.file-upload-area[data-zone="add-records"] i {
+  color: #16a34a;
+}
+.file-upload-area[data-zone="remove-records"] i {
+  color: #dc2626;
+}
+.file-upload-area h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #374151;
+  margin: 0;
+}
+.file-upload-area p {
+  font-size: 14px;
+  color: #6b7280;
+  margin: 0;
+}
+.file-upload-area input[type="file"] {
+  display: none;
+}
+
+.attachments-list {
+  margin-top: 16px;
+  min-height: 40px;
+}
+
+.attachment-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  background: #f9fafb;
+  border-radius: 6px;
+  margin-top: 8px;
+  border: 1px solid #e5e7eb;
+}
+.attachment-item i {
+  color: #16a34a;
+}
+.attachment-item .remove-file {
+  background: none;
+  border: none;
+  color: #dc2626;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.attachment-item .remove-file:hover {
+  background: #fee2e2;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 20px;
+  border-top: 1px solid #e5e7eb;
+  background: #f8fafc;
+}
+
+#confirmAddBtn,
+#confirmRemoveBtn {
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: 700;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s ease;
+  min-width: 120px;
+}
+#confirmAddBtn {
+  background: #16a34a;
+  color: #fff;
+}
+#confirmAddBtn:hover:not(:disabled) {
+  background: #15803d;
+}
+#confirmAddBtn:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+}
+
+#confirmRemoveBtn {
+  background: #dc2626;
+  color: #fff;
+}
+#confirmRemoveBtn:hover:not(:disabled) {
+  background: #b91c1c;
+}
+#confirmRemoveBtn:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+}
+
+#cancelAddBtn,
+#cancelRemoveBtn {
+  padding: 10px 20px;
+  border-radius: 8px;
+  background: #e5e7eb;
+  color: #374151;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+#cancelAddBtn:hover,
+#cancelRemoveBtn:hover {
+  background: #d1d5db;
+}
+
+/* ===== Minimal modal for duplicate overwrite ===== */
+.studlist-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  display: grid;
+  place-items: center;
+  z-index: 6000;
+}
+.studlist-modal {
+  background: #fff;
+  width: min(440px, 92vw);
+  border-radius: 12px;
+  box-shadow: 0 16px 50px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+}
+.studlist-modal-body {
+  display: grid;
+  grid-template-columns: 28px 1fr;
+  gap: 12px;
+  padding: 18px;
+  align-items: start;
+}
+.studlist-modal-body i {
+  color: #b45309;
+  margin-top: 2px;
+}
+.studlist-modal-text {
+  font-size: 14px;
+  color: #333;
+}
+.studlist-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 0 18px 16px;
+}
+.studlist-modal-actions .btn-cancel,
+.studlist-modal-actions .btn-overwrite {
+  border: 0;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.studlist-modal-actions .btn-cancel {
+  background: #e5e7eb;
+  color: #333;
+}
+.studlist-modal-actions .btn-overwrite {
+  background: #0c2d52;
+  color: #fff;
+}
+
+/* Remove old dropdown styles since modal replaces it */
+.admin-studentlist .update-records-dropdown .update-button::after,
+.admin-studentlist .dropdown-menu,
+.admin-studentlist .dropdown-item {
+  display: none;
+}
+
+/* ===== Stored Records List Styles ===== */
+.stored-records-list {
+  margin-bottom: 20px;
+  padding: 16px;
+  background: #f9fafb;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+.stored-records-list h4 {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.records-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.record-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+
+.record-item:hover {
+  border-color: #d1d5db;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+}
+
+.record-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.record-info i {
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.record-name {
+  flex: 1;
+  font-size: 13px;
+  color: #111827;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.record-size {
+  font-size: 12px;
+  color: #9ca3af;
+  margin-left: 8px;
+}
+
+.remove-record-btn {
+  background: none;
+  border: none;
+  color: #ef4444;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.remove-record-btn:hover {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.remove-record-btn i {
+  font-size: 14px;
+}
+
+/* ===== Stored Records Section ===== */
+.stored-records-section {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.stored-records-section h4 {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.stored-records-list {
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+/* ===== Delete Confirmation Modal ===== */
+#deleteConfirmationModal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 8000;
+  padding: 20px;
+}
+#deleteConfirmationModal.show {
+  display: flex;
+}
+
+.delete-modal-container {
+  background: #fff;
+  width: min(400px, 95vw);
+  border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.delete-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid #e5e7eb;
+  background: #f8fafc;
+}
+
+.delete-modal-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #0c2d52;
+  margin: 0;
+}
+
+#deleteModalClose {
+  background: none;
+  border: none;
+  font-size: 20px;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#deleteModalClose:hover {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+.delete-modal-body {
+  padding: 20px;
   text-align: center;
 }
 
-/* Collapsed nav: center icons and hide text labels */
-.admin-studentlist .sidebar.collapsed .menu .nav-item,
-.admin-studentlist .sidebar.collapsed nav a,
-.admin-studentlist .sidebar.collapsed nav button {
-  justify-content: center;
-  padding-left: 0;
-  padding-right: 0;
-}
-.admin-studentlist .sidebar.collapsed .menu .nav-item .nav-label,
-.admin-studentlist .sidebar.collapsed nav a span,
-.admin-studentlist .sidebar.collapsed nav button span {
-  display: none !important;
+.delete-modal-body p {
+  font-size: 14px;
+  color: #374151;
+  margin: 0;
 }
 
-/* 5) Bottom nav locks to the sidebar edge (expanded & collapsed) */
-.admin-studentlist #bottomNav {
-  position: fixed;
-  bottom: 0;
-  left: var(--sidebar-w); /* expanded default */
-  right: 0;
-  width: auto;
-  z-index: 50;
-}
-/* Collapsed — sibling fallback (works when #bottomNav is after .sidebar) */
-.admin-studentlist .sidebar.collapsed ~ #bottomNav {
-  left: var(--sidebar-collapsed-w) !important;
-}
-/* Collapsed — :has() boost (works regardless of DOM order where supported) */
-@supports selector(:has(*)) {
-  .admin-studentlist:has(.sidebar.collapsed) #bottomNav {
-    left: var(--sidebar-collapsed-w) !important;
-  }
-}
-/* Mobile drawer: nav spans full width */
-@media (max-width: 768px) {
-  .admin-studentlist #bottomNav {
-    left: 0 !important;
-    right: 0;
-  }
+.delete-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 20px;
+  border-top: 1px solid #e5e7eb;
+  background: #f8fafc;
 }
 
-/* 6) Safety clamps so children can’t force horizontal scrolling */
-.admin-studentlist,
-.admin-studentlist .content-scrollable,
-.admin-studentlist .curric-card,
-.admin-studentlist .table-scroll {
-  max-width: 100%;
-  box-sizing: border-box;
+#deleteCancelBtn,
+#deleteConfirmBtn {
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: 700;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s ease;
+  min-width: 100px;
+}
+#deleteCancelBtn {
+  background: #e5e7eb;
+  color: #374151;
+}
+#deleteCancelBtn:hover {
+  background: #d1d5db;
+}
+#deleteConfirmBtn {
+  background: #dc2626;
+  color: #fff;
+}
+#deleteConfirmBtn:hover:not(:disabled) {
+  background: #b91c1c;
+}
+#deleteConfirmBtn:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
 }

@@ -73,7 +73,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <option value="">Select Course</option>
             <option value="BSIT">BSIT</option>
             <option value="BSA">BSA</option>
-            <option value="BSBA">BSBA</option>
+            <option value="BAOM">BAOM</option>
           </select>
         </div>
 
